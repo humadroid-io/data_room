@@ -1,0 +1,38 @@
+<% content_for :title, "Pages" %>
+<% content_for :page_title, "Pages" %>
+<% content_for :page_subtitle, "Hierarchical pages with rich-text bodies." %>
+<% content_for :page_header do %>
+  <%= link_to "New page", new_admin_page_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @pages.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @pages.each do |page| %>
+          <tr>
+            <td><code class="text-xs"><%= page.path %></code></td>
+            <td><%= page.title %></td>
+            <td><%= page_visibility_badge(page) %></td>
+            <td class="text-right whitespace-nowrap">
+              <%= link_to "Edit", edit_admin_page_path(page), class: "btn btn-ghost btn-xs" %>
+              <%= button_to "Delete", admin_page_path(page), method: :delete,
+                    form: { class: "inline", data: { turbo_confirm: "Delete page #{page.path}?" } },
+                    class: "btn btn-ghost btn-xs text-error" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">No pages yet. <%= link_to "Create one", new_admin_page_path, class: "underline" %>.</div>
+  <% end %>
+</div>

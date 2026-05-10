@@ -1,0 +1,38 @@
+<% content_for :title, "Subscriptions" %>
+<% content_for :page_title, "Subscriptions" %>
+<% content_for :page_header do %>
+  <%= link_to "New subscription", new_admin_subscription_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @subscriptions.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Product</th>
+          <th>Status</th>
+          <th class="text-right">MRR</th>
+          <th>Stripe</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @subscriptions.each do |s| %>
+          <tr>
+            <td><%= link_to s.customer.name, admin_customer_path(s.customer), class: "underline" %></td>
+            <td><code class="text-xs"><%= s.display_product %></code></td>
+            <td><span class="badge badge-soft badge-sm"><%= s.status.titleize %></span></td>
+            <td class="text-right tabular-nums">$<%= number_with_delimiter(s.mrr_cents / 100) %></td>
+            <td><code class="text-xs text-base-content/60"><%= s.stripe_subscription_id %></code></td>
+            <td class="text-right">
+              <%= link_to "Edit", edit_admin_subscription_path(s), class: "btn btn-ghost btn-xs" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">No subscriptions yet.</div>
+  <% end %>
+</div>

@@ -1,0 +1,10 @@
+<div class="grid <%= cols == 2 ? 'grid-cols-1 sm:grid-cols-2 gap-3' : 'grid-cols-1 gap-2' %> my-6 not-prose">
+  <% children.each do |child| %>
+    <%= link_to child.path, class: "block p-4 border border-base-300 rounded-md hover:border-base-content/30 hover:bg-base-200 transition" do %>
+      <h3 class="font-medium text-base"><%= child.title %></h3>
+      <% if child.tldr.present? %>
+        <p class="text-sm text-base-content/60 mt-1"><%= truncate(child.tldr, length: 140) %></p>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,58 @@
+<% content_for :title, "Payments" %>
+<% content_for :page_title, "Payments" %>
+<% content_for :page_subtitle, "Paid Stripe invoices imported by StripeSyncJob — actual cash collected." %>
+
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Total payments</div>
+    <div class="text-2xl font-semibold tabular-nums"><%= number_with_delimiter(@total_count) %></div>
+  </div>
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Total received</div>
+    <div class="text-2xl font-semibold tabular-nums"><%= format_money(@total_amount, "usd") %></div>
+    <div class="text-xs text-base-content/50 mt-1">All currencies normalized to USD display only</div>
+  </div>
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Most recent</div>
+    <div class="text-sm font-medium mt-1">
+      <%= @last_paid_at ? "#{time_ago_in_words(@last_paid_at)} ago" : "—" %>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @payments.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Paid at</th>
+          <th>Customer</th>
+          <th>Product</th>
+          <th class="text-right">Amount</th>
+          <th>Stripe invoice</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @payments.each do |p| %>
+          <tr>
+            <td class="text-base-content/70 whitespace-nowrap"><%= p.paid_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td><%= link_to p.customer.name, admin_customer_path(p.customer), class: "underline" %></td>
+            <td class="text-sm"><%= payment_product_label(p) %></td>
+            <td class="text-right tabular-nums font-medium"><%= payment_amount(p) %></td>
+            <td><code class="text-xs text-base-content/60"><%= p.stripe_invoice_id %></code></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @total_count > @payments.size %>
+      <div class="px-4 py-2 text-xs text-base-content/50 border-t border-base-300">
+        Showing <%= @payments.size %> most recent of <%= number_with_delimiter(@total_count) %> total.
+      </div>
+    <% end %>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">
+      No payments imported yet. Run a sync from the
+      <%= link_to "dashboard", admin_root_path, class: "underline" %>.
+    </div>
+  <% end %>
+</div>

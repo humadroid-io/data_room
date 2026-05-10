@@ -1,0 +1,63 @@
+<%= form_with model: definition,
+      url: definition.persisted? ? admin_attribute_definition_path(definition) : admin_attribute_definitions_path,
+      class: "space-y-4 card bg-base-100 border border-base-300 p-6" do |f| %>
+  <% if definition.errors.any? %>
+    <div class="alert alert-error text-sm">
+      <ul class="list-disc pl-4">
+        <% definition.errors.full_messages.each do |m| %><li><%= m %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Resource type</label>
+      <%= f.select :resource_type, [ "Customer", "Subscription" ], {}, class: "select select-bordered w-full" %>
+    </div>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Data type</label>
+      <%= f.select :data_type, AttributeDefinition::DATA_TYPES.map { |t| [ t.to_s.titleize, t ] }, {}, class: "select select-bordered w-full" %>
+    </div>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Key</label>
+      <%= f.text_field :key, class: "input input-bordered w-full font-mono text-sm",
+            placeholder: "snake_case_key" %>
+    </div>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Label</label>
+      <%= f.text_field :label, class: "input input-bordered w-full" %>
+    </div>
+  </div>
+
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Description</label>
+    <%= f.text_area :description, rows: 2, class: "textarea textarea-bordered w-full" %>
+  </div>
+
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Options (JSON, only for select types)</label>
+    <textarea name="attribute_definition[options_json]" rows="6"
+              class="textarea textarea-bordered w-full font-mono text-xs"
+              placeholder='[{"value":"foo","label":"Foo","color":"blue"}]'><%= JSON.pretty_generate(definition.options) if definition.options.present? %></textarea>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <%= f.check_box :required, class: "checkbox checkbox-sm" %>
+      <span class="text-sm">Required</span>
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <%= f.check_box :capture_on_snapshot, class: "checkbox checkbox-sm" %>
+      <span class="text-sm">Capture on snapshot</span>
+    </label>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Sort order</label>
+      <%= f.number_field :sort_order, class: "input input-bordered w-full" %>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <%= f.submit (definition.persisted? ? "Save" : "Create"), class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_attribute_definitions_path, class: "btn btn-ghost" %>
+  </div>
+<% end %>

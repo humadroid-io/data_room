@@ -1,0 +1,129 @@
+<% content_for :title, "Dashboard" %>
+<% content_for :page_title, "Dashboard" %>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body p-4">
+      <div class="text-xs uppercase tracking-wide text-base-content/60">Pages</div>
+      <div class="text-2xl font-semibold tabular-nums"><%= @page_count %></div>
+      <div class="text-xs text-base-content/60"><%= @live_pages %> live (public + private)</div>
+    </div>
+  </div>
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body p-4">
+      <div class="text-xs uppercase tracking-wide text-base-content/60">Investors</div>
+      <div class="text-2xl font-semibold tabular-nums"><%= @investor_count %></div>
+      <div class="text-xs text-base-content/60">active</div>
+    </div>
+  </div>
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body p-4">
+      <div class="text-xs uppercase tracking-wide text-base-content/60">Customers</div>
+      <div class="text-2xl font-semibold tabular-nums"><%= @customer_count %></div>
+    </div>
+  </div>
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body p-4">
+      <div class="text-xs uppercase tracking-wide text-base-content/60">Active MRR</div>
+      <div class="text-2xl font-semibold tabular-nums"><%= mrr_dollars(@active_mrr_cents) %></div>
+    </div>
+  </div>
+</div>
+
+<section class="mt-10">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Stripe sync</h2>
+  <div class="card bg-base-100 border border-base-300 p-5 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div>
+        <div class="text-xs uppercase tracking-wide text-base-content/50">API key</div>
+        <div class="mt-1"><%= stripe_api_key_badge(@stripe[:configured]) %></div>
+      </div>
+
+      <div>
+        <div class="text-xs uppercase tracking-wide text-base-content/50">Customer import</div>
+        <div class="mt-1"><%= customer_import_badge(@stripe[:mode]) %></div>
+      </div>
+
+      <div>
+        <div class="text-xs uppercase tracking-wide text-base-content/50">Last sync</div>
+        <div class="mt-1">
+          <% if @stripe[:last_sync_at] %>
+            <span class="text-sm"><%= time_ago_in_words(@stripe[:last_sync_at]) %> ago</span>
+            <% if (summary = last_sync_summary_text(@stripe[:summary])) %>
+              <div class="text-xs text-base-content/60"><%= summary %></div>
+            <% end %>
+          <% else %>
+            <span class="text-base-content/60">Never</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-3 pt-3 border-t border-base-300">
+      <p class="text-xs text-base-content/60">
+        Edit <code>config/stripe_products.yml</code> to change the import mode or
+        map Stripe Price IDs to product codes (the products map is optional —
+        unmapped prices show up as <code>unknown</code>). The dev server reloads
+        the file on every sync; no restart needed.
+      </p>
+      <%= button_to "Sync now", admin_stripe_syncs_path, method: :post,
+            form: { class: "inline" },
+            class: "btn btn-primary btn-sm whitespace-nowrap",
+            disabled: !@stripe[:configured] %>
+    </div>
+  </div>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">MCP server</h2>
+  <div class="card bg-base-100 border border-base-300 p-5 space-y-3">
+    <p class="text-sm text-base-content/70">
+      LLM agents can manage content via the Model Context Protocol endpoint at
+      <code class="bg-base-200 px-1 py-0.5 rounded">POST <%= request.base_url %>/mcp</code>.
+      Authenticate with the Bearer token below — it acts as your full admin credential.
+    </p>
+
+    <% if current_admin.api_token.present? %>
+      <div class="flex items-center gap-2 font-mono text-xs">
+        <input type="password" value="<%= current_admin.api_token %>" readonly
+               class="input input-bordered input-sm flex-1" id="mcp-token"
+               onfocus="this.type='text'; this.select()" onblur="this.type='password'">
+        <%= button_to "Regenerate", admin_regenerate_token_path, method: :post,
+              form: { class: "inline", data: { turbo_confirm: "Regenerate token? Existing agents will need the new value." } },
+              class: "btn btn-ghost btn-sm" %>
+      </div>
+      <p class="text-xs text-base-content/50">
+        Click the field to reveal. Regenerating revokes the previous token.
+      </p>
+    <% else %>
+      <%= button_to "Generate MCP token", admin_regenerate_token_path, method: :post,
+            class: "btn btn-primary btn-sm" %>
+    <% end %>
+  </div>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Recent page views</h2>
+  <div class="card bg-base-100 border border-base-300">
+    <% if @recent_views.any? %>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>When</th><th>Investor</th><th>Page</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @recent_views.each do |v| %>
+            <tr>
+              <td class="text-base-content/60 whitespace-nowrap"><%= page_view_row_time(v.viewed_at) %></td>
+              <td><%= v.investor.name %></td>
+              <td><%= link_to v.page.path, admin_page_path(v.page), class: "underline" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <div class="p-6 text-sm text-base-content/60">No views yet.</div>
+    <% end %>
+  </div>
+</section>

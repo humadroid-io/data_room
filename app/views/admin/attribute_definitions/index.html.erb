@@ -1,0 +1,40 @@
+<% content_for :title, "Attribute definitions" %>
+<% content_for :page_title, "Attributes" %>
+<% content_for :page_subtitle, "Custom field schema for resources." %>
+<% content_for :page_header do %>
+  <%= link_to "New attribute", new_admin_attribute_definition_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<% @grouped.each do |resource, defns| %>
+  <section class="mb-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-2"><%= resource %></h2>
+    <div class="card bg-base-100 border border-base-300">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Label</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Snapshot</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% defns.each do |d| %>
+            <tr>
+              <td><code class="text-xs"><%= d.key %></code></td>
+              <td><%= d.label %></td>
+              <td><span class="badge badge-soft badge-sm"><%= d.data_type %></span></td>
+              <td><%= "Yes" if d.required %></td>
+              <td><%= "Yes" if d.capture_on_snapshot %></td>
+              <td class="text-right">
+                <%= link_to "Edit", edit_admin_attribute_definition_path(d), class: "btn btn-ghost btn-xs" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% end %>

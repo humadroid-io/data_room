@@ -1,0 +1,34 @@
+# Stripe sync configuration. Loaded by config/initializers/stripe.rb and
+# read fresh on every sync — edits take effect without a restart.
+# See README.md → "Stripe sync" for the full explanation.
+#
+# customer_import — controls how StripeSyncJob populates the local Customer table:
+#   none    — never auto-create. Admin sets stripe_customer_id manually.
+#             Subscriptions for unknown customers are logged and skipped.
+#   all     — pull every Stripe Customer and upsert a local Customer row.
+#   paying  — only pull customers that have at least one paid invoice.
+#
+# products — translates opaque Stripe Price IDs into stable, semantic
+# product_codes that the rest of the app uses (Subscription.product_code,
+# Subscription.for_product scope, the [MONTHLY_REVENUE] widget, MCP tools).
+# **Optional.** Unmapped prices fall back to displaying the raw stripe_price_id.
+#
+# Multiple price IDs can map to the same code (e.g. list-price and a
+# discounted variant both → "pro"); the raw subscription row keeps the
+# original price ID for traceability.
+
+development:
+  customer_import: all
+  products:
+    # price_1Ab2Cd3Ef4: pro
+
+test:
+  customer_import: none
+  products: {}
+
+production:
+  customer_import: paying
+  products:
+    # price_1Ab2Cd3Ef4: pro
+    # price_5Gh6Ij7Kl8: pro_discounted
+    # price_9Mn0Op1Qr2: starter

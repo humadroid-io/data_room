@@ -1,0 +1,34 @@
+<% w = mrr_walk_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].first[:data].any? %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button" data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Reset zoom">Reset</button>
+        <button type="button" data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Fullscreen">↔</button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= column_chart w[:data],
+              id:      w[:chart_id],
+              height:  "320px",
+              stacked: true,
+              prefix:  "$",
+              colors:  w[:colors],
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      MRR added (new + expansion) above zero, MRR lost (contraction + churn) below.
+      Read the bar height for net new MRR each month.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">
+      Need at least two months of snapshot data. Run
+      <code>MonthlySnapshotJob.perform_now(force: true)</code> after a Stripe sync.
+    </p>
+  <% end %>
+</div>

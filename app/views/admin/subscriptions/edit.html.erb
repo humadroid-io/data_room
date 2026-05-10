@@ -1,0 +1,4 @@
+<% content_for :title, "Edit subscription" %>
+<% content_for :page_title, "Edit subscription" %>
+<% content_for :page_subtitle, @subscription.customer.name %>
+<%= render "form", subscription: @subscription %>

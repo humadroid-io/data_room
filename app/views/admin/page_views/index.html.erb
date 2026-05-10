@@ -1,0 +1,40 @@
+<% content_for :title, "Page views" %>
+<% content_for :page_title, "Page views" %>
+<% content_for :page_subtitle, "Who viewed what, when." %>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <h2 class="text-xs uppercase tracking-wide text-base-content/60 mb-2">Views per investor</h2>
+    <ul class="text-sm space-y-1">
+      <% @per_investor.sort_by { |_, v| -v }.each do |name, count| %>
+        <li class="flex justify-between"><span><%= name %></span><span class="tabular-nums"><%= count %></span></li>
+      <% end %>
+    </ul>
+  </div>
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <h2 class="text-xs uppercase tracking-wide text-base-content/60 mb-2">Top pages</h2>
+    <ul class="text-sm space-y-1">
+      <% @per_page.each do |path, count| %>
+        <li class="flex justify-between"><code class="text-xs"><%= path %></code><span class="tabular-nums"><%= count %></span></li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+
+<div class="card bg-base-100 border border-base-300">
+  <table class="table table-sm">
+    <thead>
+      <tr><th>When</th><th>Investor</th><th>Page</th><th>IP</th></tr>
+    </thead>
+    <tbody>
+      <% @views.each do |v| %>
+        <tr>
+          <td class="text-base-content/60 whitespace-nowrap"><%= v.viewed_at.strftime("%Y-%m-%d %H:%M") %></td>
+          <td><%= v.investor.name %></td>
+          <td><code class="text-xs"><%= v.page.path %></code></td>
+          <td class="text-base-content/60 text-xs"><%= v.ip_address %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

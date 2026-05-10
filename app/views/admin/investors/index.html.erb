@@ -1,0 +1,49 @@
+<% content_for :title, "Investors" %>
+<% content_for :page_title, "Investors" %>
+<% content_for :page_header do %>
+  <%= link_to "New investor", new_admin_investor_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @investors.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Fund</th>
+          <th>Status</th>
+          <th class="text-right">Views</th>
+          <th>Last login</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @investors.each do |i| %>
+          <tr>
+            <td><%= link_to i.name, admin_investor_path(i), class: "underline" %></td>
+            <td><%= i.fund_name %></td>
+            <td>
+              <% if i.usable? %>
+                <span class="badge badge-success badge-sm">Active</span>
+              <% else %>
+                <span class="badge badge-ghost badge-sm">Inactive</span>
+              <% end %>
+            </td>
+            <td class="text-right tabular-nums"><%= @view_count[i.id] || 0 %></td>
+            <td class="text-base-content/60"><%= i.last_login_at ? "#{time_ago_in_words(i.last_login_at)} ago" : "—" %></td>
+            <td class="text-right whitespace-nowrap">
+              <%= button_to "View as", admin_impersonations_path(investor_id: i.id),
+                    method: :post,
+                    form: { class: "inline" },
+                    class: "btn btn-ghost btn-xs" %>
+              <%= link_to "Stats", admin_investor_path(i), class: "btn btn-ghost btn-xs" %>
+              <%= link_to "Edit", edit_admin_investor_path(i), class: "btn btn-ghost btn-xs" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">No investors yet.</div>
+  <% end %>
+</div>

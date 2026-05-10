@@ -1,0 +1,53 @@
+<% w = monthly_revenue_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].any? %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button"
+                data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Reset zoom">
+          Reset
+        </button>
+        <button type="button"
+                data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Fullscreen (or double-click chart)">
+          ↔
+        </button>
+      </div>
+
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= area_chart w[:data],
+              id:      w[:chart_id],
+              height:  "320px",
+              stacked: true,
+              prefix:  "$",
+              library: w[:library] %>
+      </div>
+    </div>
+
+    <% if w[:events].any? %>
+      <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/60">
+        <% w[:events].each do |event| %>
+          <li class="flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full" style="background-color: <%= event.color %>"></span>
+            <span class="font-medium text-base-content/80"><%= event.occurred_on.strftime("%b %Y") %></span>
+            <span><%= event.title %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <p class="mt-2 text-xs text-base-content/40">
+      Tip: Ctrl+scroll to zoom · drag to select a range · double-click to fullscreen.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">
+      No payments imported yet. Run a Stripe sync from the admin dashboard.
+    </p>
+  <% end %>
+</div>

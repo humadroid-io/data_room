@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <title>Admin · <%= content_for(:title) || "Data Room" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <header class="border-b border-base-300 bg-base-100">
+      <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <%= link_to admin_root_path, class: "flex items-center gap-2 text-sm font-semibold tracking-tight" do %>
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-content text-xs">DR</span>
+            Admin
+          <% end %>
+          <nav class="hidden md:flex items-center gap-1 text-sm">
+            <% admin_nav = [
+                 ["Dashboard",  admin_root_path],
+                 ["Pages",      admin_pages_path],
+                 ["Customers",  admin_customers_path],
+                 ["Subs",       admin_subscriptions_path],
+                 ["Payments",   admin_payments_path],
+                 ["Events",     admin_events_path],
+                 ["Investors",  admin_investors_path],
+                 ["Users",      admin_users_path],
+                 ["Attributes", admin_attribute_definitions_path],
+                 ["Views",      admin_page_views_path]
+               ] %>
+            <% admin_nav.each do |label, path| %>
+              <% active = current_page?(path) %>
+              <%= link_to label, path,
+                    class: "px-3 py-1.5 rounded-md hover:bg-base-200 #{'bg-base-200 font-medium' if active}" %>
+            <% end %>
+          </nav>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="hidden sm:inline text-base-content/60"><%= current_admin.email %></span>
+          <%= button_to "Sign out", admin_logout_path, method: :delete,
+                form: { class: "inline" },
+                class: "btn btn-ghost btn-xs" %>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+      <% flash.each do |type, msg| %>
+        <div class="alert alert-<%= type == 'alert' ? 'error' : 'success' %> py-2 mb-4 text-sm"><%= msg %></div>
+      <% end %>
+
+      <% if content_for?(:page_header) %>
+        <div class="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <% if content_for?(:page_title) %>
+              <h1 class="text-2xl font-semibold tracking-tight"><%= yield :page_title %></h1>
+            <% end %>
+            <% if content_for?(:page_subtitle) %>
+              <p class="text-sm text-base-content/60 mt-1"><%= yield :page_subtitle %></p>
+            <% end %>
+          </div>
+          <div class="flex items-center gap-2"><%= yield :page_header %></div>
+        </div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+  </body>
+</html>

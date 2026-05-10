@@ -1,0 +1,16 @@
+<% content_for :title, "Admin sign in" %>
+<% content_for :heading, "Admin sign-in" %>
+
+<%= form_with url: admin_login_path, method: :post, class: "space-y-4" do |f| %>
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Email</label>
+    <%= f.email_field :email, autofocus: true, autocomplete: "email",
+          class: "input input-bordered w-full" %>
+  </div>
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Password</label>
+    <%= f.password_field :password, autocomplete: "current-password",
+          class: "input input-bordered w-full" %>
+  </div>
+  <%= f.submit "Sign in", class: "btn btn-primary w-full" %>
+<% end %>

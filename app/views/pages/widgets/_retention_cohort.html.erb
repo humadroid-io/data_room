@@ -1,0 +1,43 @@
+<% w = retention_cohort_widget(local_assigns[:attribute_key]) %>
+
+<div class="my-6 not-prose">
+  <% if w[:key].nil? %>
+    <p class="text-sm text-base-content/60">
+      No captured single-select Customer attribute configured. Mark a
+      single-select attribute as <em>capture on snapshot</em> in
+      <strong>Admin → Attributes</strong>, then place this widget as
+      <code>[RETENTION_COHORT:your_attribute_key]</code>.
+    </p>
+  <% elsif w[:data].empty? %>
+    <p class="text-sm text-base-content/60">No snapshots with captured <code><%= w[:key] %></code> yet.</p>
+  <% else %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button"
+                data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Reset zoom">
+          Reset
+        </button>
+        <button type="button"
+                data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Fullscreen (or double-click chart)">
+          ↔
+        </button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= area_chart w[:data],
+              id:      w[:chart_id],
+              height:  "320px",
+              stacked: true,
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/40">
+      Tip: Ctrl+scroll to zoom · drag to select a range · double-click to fullscreen.
+    </p>
+  <% end %>
+</div>

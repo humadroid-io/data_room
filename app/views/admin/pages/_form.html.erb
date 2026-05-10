@@ -1,0 +1,114 @@
+<%= form_with model: page, url: page.persisted? ? admin_page_path(page) : admin_pages_path,
+      class: "space-y-6", data: { controller: "" } do |f| %>
+
+  <% if page.errors.any? %>
+    <div class="alert alert-error text-sm">
+      <ul class="list-disc pl-4">
+        <% page.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Title</label>
+      <%= f.text_field :title, class: "input input-bordered w-full", autofocus: true %>
+    </div>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Slug (URL segment)</label>
+      <%= f.text_field :slug, placeholder: "section", class: "input input-bordered w-full font-mono text-sm" %>
+      <p class="text-xs text-base-content/50 mt-1">Leave blank only for the single root landing page (path <code>/</code>).</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Parent</label>
+      <%= f.collection_select :parent_id,
+            Page.order(:path).where.not(id: page.id),
+            :id, ->(p) { "#{p.path} — #{p.title}" },
+            { include_blank: "— root —" },
+            class: "select select-bordered w-full" %>
+    </div>
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Sort order</label>
+      <%= f.number_field :sort_order, class: "input input-bordered w-full" %>
+    </div>
+  </div>
+
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">TL;DR</label>
+    <%= f.text_area :tldr, rows: 2, class: "textarea textarea-bordered w-full",
+          placeholder: "Short summary rendered as a callout above the body." %>
+  </div>
+
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Body</label>
+    <%= f.rich_text_area :body, class: "min-h-[400px] border border-base-300 rounded-md" %>
+
+    <details class="mt-3 border border-base-300 rounded-md">
+      <summary class="cursor-pointer px-3 py-2 text-xs font-medium text-base-content/70 select-none">
+        Widget tokens (drop anywhere in the body) — click to expand
+      </summary>
+      <div class="px-3 pb-3 pt-1">
+        <%= render "widget_help" %>
+      </div>
+    </details>
+  </div>
+
+  <div>
+    <label class="label label-text text-xs uppercase tracking-wide">Documents (multi-upload)</label>
+    <%= f.file_field :documents, multiple: true, class: "file-input file-input-bordered w-full" %>
+    <% if page.documents.attached? %>
+      <ul class="text-sm mt-2 space-y-1">
+        <% page.documents.each do |d| %>
+          <li class="flex items-center justify-between border border-base-300 rounded p-2">
+            <span><%= d.filename %></span>
+            <%= button_to "Remove", admin_page_document_path(page, d.id), method: :delete,
+                  form: { class: "inline", data: { turbo_confirm: "Remove document?" } },
+                  class: "btn btn-ghost btn-xs text-error" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+
+  <fieldset class="space-y-3 pt-4 border-t border-base-300">
+    <legend class="text-xs uppercase tracking-wide text-base-content/60">Visibility</legend>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+      <% [
+           [:draft,   "Draft",     "Only admins can see this page."],
+           [:public,  "Published", "Visible to every signed-in investor."],
+           [:private, "Private",   "Visible only to the investors selected below."]
+         ].each do |value, label, hint| %>
+        <label class="border border-base-300 rounded-md p-3 cursor-pointer hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-base-200">
+          <div class="flex items-center gap-2">
+            <%= f.radio_button :visibility, value, class: "radio radio-xs" %>
+            <span class="text-sm font-medium"><%= label %></span>
+          </div>
+          <p class="text-xs text-base-content/60 mt-1"><%= hint %></p>
+        </label>
+      <% end %>
+    </div>
+
+    <div>
+      <label class="label label-text text-xs uppercase tracking-wide">Allowed investors <span class="text-base-content/40 normal-case">(only used when Private)</span></label>
+      <% allowed_ids = page.page_accesses.pluck(:investor_id) %>
+      <select name="page[allowed_investor_ids][]" multiple class="select select-bordered w-full h-32">
+        <% Investor.order(:name).each do |inv| %>
+          <option value="<%= inv.id %>" <%= "selected" if allowed_ids.include?(inv.id) %>>
+            <%= inv.name %><%= " — #{inv.fund_name}" if inv.fund_name.present? %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+  </fieldset>
+
+  <div class="flex items-center gap-2">
+    <%= f.submit (page.persisted? ? "Save changes" : "Create page"), class: "btn btn-primary" %>
+    <%= link_to "Cancel", admin_pages_path, class: "btn btn-ghost" %>
+  </div>
+<% end %>

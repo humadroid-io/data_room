@@ -1,0 +1,15 @@
+<% breakdown = churn_reasons_breakdown %>
+
+<div class="my-6 not-prose">
+  <% if breakdown.any? %>
+    <%= bar_chart breakdown.map { |reason, count| [ reason.titleize, count ] },
+          height: "260px",
+          colors: [ "#525252" ],
+          library: { plugins: { legend: { display: false } } } %>
+    <p class="mt-2 text-xs text-base-content/50">
+      Reasons for the <%= breakdown.values.sum %> categorized churn<%= 's' unless breakdown.values.sum == 1 %>.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No categorized churn reasons yet.</p>
+  <% end %>
+</div>

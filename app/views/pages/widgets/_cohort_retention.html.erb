@@ -1,0 +1,30 @@
+<% w = cohort_retention_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].any? %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button" data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Reset zoom">Reset</button>
+        <button type="button" data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Fullscreen">↔</button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= line_chart w[:data],
+              id:      w[:chart_id],
+              height:  "320px",
+              suffix:  "%",
+              round:   1,
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      Each line is a cohort of customers acquired in the labeled month. X-axis is months since acquisition.
+      Steeper drops mean faster early churn; flatter tails mean stickier customers.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No customers tracked yet.</p>
+  <% end %>
+</div>

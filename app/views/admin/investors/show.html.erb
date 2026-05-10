@@ -1,0 +1,131 @@
+<% content_for :title, @investor.name %>
+<% content_for :page_title, @investor.name %>
+<% content_for :page_subtitle, [ @investor.fund_name, @investor.email ].compact_blank.join(" · ") %>
+<% content_for :page_header do %>
+  <%= button_to "View as", admin_impersonations_path(investor_id: @investor.id),
+        method: :post,
+        form: { class: "inline" },
+        class: "btn btn-ghost btn-sm" %>
+  <%= link_to "Edit", edit_admin_investor_path(@investor), class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Status</div>
+    <div class="mt-1">
+      <% if @investor.usable? %>
+        <span class="badge badge-success">Active</span>
+      <% else %>
+        <span class="badge badge-ghost">Inactive</span>
+      <% end %>
+    </div>
+    <% if @investor.access_expires_at %>
+      <div class="text-xs text-base-content/50 mt-1">
+        Expires <%= @investor.access_expires_at.strftime("%Y-%m-%d") %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Total page views</div>
+    <div class="text-2xl font-semibold tabular-nums"><%= @total_views %></div>
+    <div class="text-xs text-base-content/50"><%= @distinct_pages %> distinct pages</div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">Last login</div>
+    <div class="text-sm font-medium mt-1">
+      <%= @investor.last_login_at ? "#{time_ago_in_words(@investor.last_login_at)} ago" : "Never" %>
+    </div>
+    <% if @last_view %>
+      <div class="text-xs text-base-content/50 mt-1">
+        Last view <%= time_ago_in_words(@last_view) %> ago
+      </div>
+    <% end %>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300 p-4">
+    <div class="text-xs uppercase tracking-wide text-base-content/60">First seen</div>
+    <div class="text-sm font-medium mt-1">
+      <%= @first_view ? @first_view.strftime("%Y-%m-%d") : "—" %>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-100 border border-base-300 p-5 mb-6">
+  <div class="flex items-center justify-between mb-2">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Access code</h2>
+    <%= button_to "Regenerate",
+          regenerate_access_code_admin_investor_path(@investor),
+          method: :post,
+          form: { class: "inline", data: { turbo_confirm: "Regenerate? The old code stops working immediately." } },
+          class: "btn btn-ghost btn-xs" %>
+  </div>
+  <div class="font-mono text-sm bg-base-200 p-2 rounded select-all"><%= @investor.access_code %></div>
+  <p class="text-xs text-base-content/50 mt-2">
+    Shareable sign-in URL: <code class="bg-base-200 px-1 py-0.5 rounded select-all"><%= login_url(code: @investor.access_code) %></code>
+  </p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <section class="card bg-base-100 border border-base-300 p-5">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Pages viewed</h2>
+    <% if @per_page.any? %>
+      <table class="table table-sm">
+        <thead>
+          <tr><th>Page</th><th class="text-right">Views</th><th>Last seen</th></tr>
+        </thead>
+        <tbody>
+          <% @per_page.each do |row| %>
+            <tr>
+              <td>
+                <div class="text-sm"><%= row[:title] %></div>
+                <div class="text-xs text-base-content/50"><code><%= row[:path] %></code></div>
+              </td>
+              <td class="text-right tabular-nums"><%= row[:views] %></td>
+              <td class="text-base-content/60 text-xs whitespace-nowrap">
+                <%= time_ago_in_words(Time.zone.parse(row[:last_seen].to_s)) %> ago
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-base-content/60">No views yet.</p>
+    <% end %>
+  </section>
+
+  <section class="card bg-base-100 border border-base-300 p-5">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Recent activity</h2>
+    <% if @recent.any? %>
+      <ol class="space-y-1 text-sm max-h-96 overflow-y-auto">
+        <% @recent.each do |v| %>
+          <li class="flex items-center justify-between gap-3 py-1 border-b border-base-200 last:border-0">
+            <div class="min-w-0">
+              <div class="truncate"><%= v.page.title %></div>
+              <div class="text-xs text-base-content/50"><code><%= v.page.path %></code></div>
+            </div>
+            <span class="text-xs text-base-content/60 whitespace-nowrap"><%= v.viewed_at.strftime("%Y-%m-%d %H:%M") %></span>
+          </li>
+        <% end %>
+      </ol>
+    <% else %>
+      <p class="text-sm text-base-content/60">No views yet.</p>
+    <% end %>
+  </section>
+</div>
+
+<% if @allowed_pages.any? %>
+  <section class="card bg-base-100 border border-base-300 p-5 mt-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Private pages this investor can see</h2>
+    <ul class="flex flex-wrap gap-2">
+      <% @allowed_pages.each do |p| %>
+        <li>
+          <%= link_to admin_page_path(p), class: "badge badge-soft" do %>
+            <%= p.path %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>

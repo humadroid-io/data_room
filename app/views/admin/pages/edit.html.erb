@@ -1,0 +1,5 @@
+<% content_for :title, "Edit #{@page.title}" %>
+<% content_for :page_title, "Edit page" %>
+<% content_for :page_subtitle, @page.path %>
+
+<%= render "form", page: @page %>

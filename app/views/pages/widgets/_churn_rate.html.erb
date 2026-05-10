@@ -1,0 +1,38 @@
+<% w = churn_rate_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].any? && w[:data].any? { |_, v| v.positive? } %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button"
+                data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Reset zoom">
+          Reset
+        </button>
+        <button type="button"
+                data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300"
+                title="Fullscreen (or double-click chart)">
+          ↔
+        </button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= line_chart w[:data],
+              id:       w[:chart_id],
+              height:   "260px",
+              suffix:   "%",
+              round:    2,
+              colors:   [ "#dc2626" ],
+              library:  w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      Logo churn = customers churned this month ÷ customers active at month start.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No churn recorded in the trailing 12 months.</p>
+  <% end %>
+</div>

@@ -1,0 +1,62 @@
+<% content_for :title, @page.title %>
+<% content_for :page_title, @page.title %>
+<% content_for :page_subtitle do %><%= @page.path %> · <%= page_visibility_badge(@page) %><% end %>
+<% content_for :page_header do %>
+  <% investors = Investor.usable.order(:name) %>
+  <% if investors.any? %>
+    <details class="dropdown dropdown-end">
+      <summary class="btn btn-ghost btn-sm">View as investor ▾</summary>
+      <ul class="dropdown-content menu bg-base-100 border border-base-300 rounded-md w-56 p-1 mt-1 z-20">
+        <% investors.each do |inv| %>
+          <li>
+            <%= button_to admin_impersonations_path(investor_id: inv.id, return_to: @page.path),
+                  method: :post,
+                  form: { class: "w-full" },
+                  class: "text-left text-sm px-2 py-1 w-full hover:bg-base-200 rounded" do %>
+              <%= inv.name %>
+              <% if inv.fund_name.present? %><span class="text-base-content/50"> · <%= inv.fund_name %></span><% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </details>
+  <% end %>
+  <%= link_to "Edit", edit_admin_page_path(@page), class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300 p-6">
+  <% if @page.tldr.present? %>
+    <div class="callout-tldr"><strong>TL;DR.</strong> <%= @page.tldr %></div>
+  <% end %>
+
+  <article class="prose-page">
+    <%= @page.body %>
+  </article>
+
+  <% if @page.documents.attached? %>
+    <section class="mt-6 pt-6 border-t border-base-300">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-2">Documents</h2>
+      <ul class="space-y-1 text-sm">
+        <% @page.documents.each do |d| %>
+          <li><%= link_to d.filename, rails_blob_path(d, disposition: "attachment"), class: "underline" %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if @page.visibility_private? %>
+    <section class="mt-6 pt-6 border-t border-base-300">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-2">Allowed investors</h2>
+      <% allowed = @page.allowed_investors.order(:name) %>
+      <% if allowed.any? %>
+        <div class="flex flex-wrap gap-2">
+          <% allowed.each do |inv| %>
+            <span class="badge badge-soft badge-sm"><%= inv.name %></span>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-warning">No investors allowlisted — nobody can see this page.</p>
+      <% end %>
+    </section>
+  <% end %>
+</div>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(yarn build *)",
+      "Bash(yarn build:css)",
+      "Bash(bin/rails test *)"
+    ]
+  }
+}

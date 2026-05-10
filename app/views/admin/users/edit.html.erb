@@ -1,0 +1,4 @@
+<% content_for :title, "Edit #{@user.name}" %>
+<% content_for :page_title, @user.name %>
+<% content_for :page_subtitle, @user.email %>
+<%= render "form", user: @user %>

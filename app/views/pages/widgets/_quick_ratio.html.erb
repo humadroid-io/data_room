@@ -1,0 +1,29 @@
+<% w = quick_ratio_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].any? %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button" data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Reset zoom">Reset</button>
+        <button type="button" data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Fullscreen">↔</button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= line_chart w[:data],
+              id:      w[:chart_id],
+              height:  "260px",
+              round:   2,
+              colors:  w[:colors],
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      Quick ratio = (new + expansion) ÷ (contraction + churn). <strong>Above 4 is healthy</strong> for early-stage SaaS, 1–4 borderline, below 1 is shrinking.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No months with both gains and losses recorded yet.</p>
+  <% end %>
+</div>

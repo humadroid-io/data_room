@@ -1,0 +1,42 @@
+<% content_for :title, "Events" %>
+<% content_for :page_title, "Company events" %>
+<% content_for :page_subtitle, "Annotate revenue charts with key moments — funding, launches, hires, etc." %>
+<% content_for :page_header do %>
+  <%= link_to "New event", new_admin_event_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @events.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Kind</th>
+          <th>Title</th>
+          <th>Description</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @events.each do |e| %>
+          <tr>
+            <td class="whitespace-nowrap"><%= e.occurred_on.to_fs(:long) %></td>
+            <td><%= event_kind_badge(e) %></td>
+            <td class="font-medium"><%= e.title %></td>
+            <td class="text-sm text-base-content/60"><%= truncate(e.description, length: 80) %></td>
+            <td class="text-right whitespace-nowrap">
+              <%= link_to "Edit", edit_admin_event_path(e), class: "btn btn-ghost btn-xs" %>
+              <%= button_to "Delete", admin_event_path(e), method: :delete,
+                    form: { class: "inline", data: { turbo_confirm: "Delete event?" } },
+                    class: "btn btn-ghost btn-xs text-error" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">
+      No events yet. <%= link_to "Add the first one", new_admin_event_path, class: "underline" %>.
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,28 @@
+<article class="prose-page">
+  <h1><%= @page.title %></h1>
+
+  <% if @page.tldr.present? %>
+    <div class="callout-tldr">
+      <strong>TL;DR.</strong> <%= @page.tldr %>
+    </div>
+  <% end %>
+
+  <%= render_page_body(@page, current_investor) %>
+
+  <% if @page.documents.attached? %>
+    <section class="mt-10">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Documents</h2>
+      <ul class="space-y-2">
+        <% @page.documents.each do |doc| %>
+          <li>
+            <%= link_to rails_blob_path(doc, disposition: "attachment"),
+                  class: "flex items-center justify-between p-3 border border-base-300 rounded-md hover:bg-base-200 text-sm" do %>
+              <span><%= doc.filename %></span>
+              <span class="text-xs text-base-content/50"><%= number_to_human_size(doc.byte_size) %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+</article>

@@ -1,0 +1,48 @@
+<% content_for :title, "Customers" %>
+<% content_for :page_title, "Customers" %>
+<% content_for :page_header do %>
+  <%= link_to "New customer", new_admin_customer_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<% defn_stage = AttributeDefinition.find_by(resource_type: "Customer", key: "compliance_stage") %>
+
+<div class="card bg-base-100 border border-base-300">
+  <% if @customers.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Anonymized</th>
+          <th>Status</th>
+          <% if defn_stage %><th>Stage</th><% end %>
+          <th>Stripe ID</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @customers.each do |c| %>
+          <tr class="<%= 'opacity-60' if c.churned? %>">
+            <td><%= link_to c.name, admin_customer_path(c), class: "underline" %></td>
+            <td class="text-base-content/60"><%= c.anonymized_label %></td>
+            <td>
+              <% if c.churned? %>
+                <span class="badge badge-soft badge-error badge-sm" title="<%= c.churned_on %>">Churned</span>
+              <% else %>
+                <span class="badge badge-soft badge-success badge-sm">Active</span>
+              <% end %>
+            </td>
+            <% if defn_stage %>
+              <td><%= custom_attribute_badge(defn_stage, c.custom_attribute("compliance_stage")) %></td>
+            <% end %>
+            <td><code class="text-xs"><%= c.stripe_customer_id %></code></td>
+            <td class="text-right">
+              <%= link_to "Edit", edit_admin_customer_path(c), class: "btn btn-ghost btn-xs" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <div class="p-6 text-sm text-base-content/60">No customers yet.</div>
+  <% end %>
+</div>

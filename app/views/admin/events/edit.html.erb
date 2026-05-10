@@ -1,0 +1,4 @@
+<% content_for :title, "Edit event" %>
+<% content_for :page_title, @event.title %>
+<% content_for :page_subtitle, @event.occurred_on.to_fs(:long) %>
+<%= render "form", event: @event %>

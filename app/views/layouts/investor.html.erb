@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <title><%= content_for(:title) || (@page&.title || "Data Room") %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+  <body class="min-h-screen">
+    <% if admin_signed_in? && investor_signed_in? %>
+      <%# Impersonation mode — admin is "wearing" an investor identity %>
+      <div class="bg-warning/15 border-b border-warning/30 text-xs">
+        <div class="max-w-6xl mx-auto px-6 h-9 flex items-center justify-between">
+          <span>
+            Viewing as <strong><%= current_investor.name %></strong>
+            <% if current_investor.fund_name.present? %>(<%= current_investor.fund_name %>)<% end %>
+            — admin impersonation.
+          </span>
+          <div class="flex items-center gap-2">
+            <%= link_to "Edit page", edit_admin_page_path(@page), class: "btn btn-ghost btn-xs" if @page %>
+            <%= button_to "Stop viewing", admin_impersonation_path(current_investor),
+                  method: :delete,
+                  form: { class: "inline" },
+                  class: "btn btn-ghost btn-xs" %>
+          </div>
+        </div>
+      </div>
+    <% elsif admin_signed_in? %>
+      <%# Direct admin browsing — full edit toolbar %>
+      <div class="bg-base-200 border-b border-base-300 text-xs">
+        <div class="max-w-6xl mx-auto px-6 h-9 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-base-content/60">Admin · <%= current_admin.email %></span>
+            <% if @page %>
+              <%= page_visibility_badge(@page) %>
+            <% end %>
+          </div>
+          <div class="flex items-center gap-1">
+            <%= link_to "Dashboard", admin_root_path, class: "btn btn-ghost btn-xs" %>
+            <% if @page %>
+              <%= link_to "Edit page", edit_admin_page_path(@page), class: "btn btn-ghost btn-xs" %>
+              <%= link_to "Page settings", admin_page_path(@page), class: "btn btn-ghost btn-xs" %>
+              <%= link_to "+ Sub-page", new_admin_page_path(parent_id: @page.id), class: "btn btn-ghost btn-xs" %>
+            <% end %>
+            <% investors = Investor.usable.order(:name) %>
+            <% if investors.any? %>
+              <details class="dropdown dropdown-end">
+                <summary class="btn btn-ghost btn-xs">View as ▾</summary>
+                <ul class="dropdown-content menu bg-base-100 border border-base-300 rounded-md w-56 p-1 mt-1 z-40 text-sm">
+                  <% investors.each do |inv| %>
+                    <li>
+                      <%= button_to admin_impersonations_path(investor_id: inv.id, return_to: request.path),
+                            method: :post,
+                            form: { class: "w-full" },
+                            class: "text-left px-2 py-1 w-full hover:bg-base-200 rounded" do %>
+                        <%= inv.name %>
+                        <% if inv.fund_name.present? %><span class="text-base-content/50"> · <%= inv.fund_name %></span><% end %>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              </details>
+            <% end %>
+            <%= button_to "Sign out admin", admin_logout_path, method: :delete,
+                  form: { class: "inline" },
+                  class: "btn btn-ghost btn-xs" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <header class="border-b border-base-300 bg-base-100/80 backdrop-blur sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <%= link_to root_path, class: "flex items-center gap-2 font-semibold tracking-tight text-sm" do %>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-content text-xs">DR</span>
+          <span>Data Room</span>
+        <% end %>
+
+        <div class="flex items-center gap-4 text-sm text-base-content/70">
+          <% if investor_signed_in? %>
+            <span class="hidden sm:inline"><%= current_investor.name %></span>
+            <%= button_to "Sign out", logout_path, method: :delete,
+                  form: { class: "inline" },
+                  class: "btn btn-ghost btn-xs" %>
+          <% end %>
+        </div>
+      </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-8">
+      <aside class="hidden md:block">
+        <nav class="text-sm sticky top-20">
+          <% landing = Page.landing %>
+          <% if landing %>
+            <%= link_to "Overview", root_path, class: "block px-2 py-1.5 rounded hover:bg-base-200 #{'bg-base-200 font-medium' if @page&.id == landing.id}" %>
+          <% end %>
+          <% (@sidebar || []).each do |section| %>
+            <% next if investor_signed_in? && !section.visible_to?(current_investor) %>
+            <%= link_to section.title, section.path,
+                  class: "block px-2 py-1.5 rounded hover:bg-base-200 #{'bg-base-200 font-medium' if @page&.path&.start_with?(section.path)} #{'opacity-60 italic' if section.visibility_draft?}" %>
+            <% if @page&.path&.start_with?(section.path) %>
+              <% scope = viewing_as_admin? ? section.children.order(:sort_order) : section.visible_children_for(current_investor) %>
+              <% scope.each do |child| %>
+                <%= link_to child.title, child.path,
+                      class: "block pl-5 pr-2 py-1 rounded text-base-content/70 hover:bg-base-200 #{'bg-base-200 text-base-content font-medium' if @page&.id == child.id} #{'opacity-60 italic' if child.visibility_draft?}" %>
+              <% end %>
+            <% end %>
+          <% end %>
+        </nav>
+      </aside>
+
+      <main>
+        <% if @breadcrumbs && @breadcrumbs.size > 1 %>
+          <nav class="text-xs text-base-content/60 mb-4">
+            <% @breadcrumbs.each_with_index do |crumb, i| %>
+              <% if i == @breadcrumbs.size - 1 %>
+                <span class="text-base-content"><%= crumb.title %></span>
+              <% else %>
+                <%= link_to crumb.title, crumb.path, class: "hover:text-base-content" %>
+                <span class="mx-1">/</span>
+              <% end %>
+            <% end %>
+          </nav>
+        <% end %>
+
+        <%= yield %>
+      </main>
+    </div>
+
+    <% if investor_signed_in? %>
+      <div class="watermark"><%= current_investor.watermark_label %></div>
+    <% end %>
+  </body>
+</html>

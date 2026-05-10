@@ -1,0 +1,55 @@
+<% content_for :title, "Users" %>
+<% content_for :page_title, "Users" %>
+<% content_for :page_subtitle, "Admins and viewers who can sign in to /admin." %>
+<% content_for :page_header do %>
+  <%= link_to "New user", new_admin_user_path, class: "btn btn-primary btn-sm" %>
+<% end %>
+
+<div class="card bg-base-100 border border-base-300">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>MCP token</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each do |u| %>
+        <tr>
+          <td>
+            <%= u.name %>
+            <% if u == current_admin %>
+              <span class="badge badge-soft badge-xs ml-1">you</span>
+            <% end %>
+          </td>
+          <td><code class="text-xs"><%= u.email %></code></td>
+          <td>
+            <% if u.admin? %>
+              <span class="badge badge-soft badge-info badge-sm">Admin</span>
+            <% else %>
+              <span class="badge badge-soft badge-sm">Viewer</span>
+            <% end %>
+          </td>
+          <td>
+            <% if u.api_token.present? %>
+              <span class="text-xs text-base-content/60">issued</span>
+            <% else %>
+              <span class="text-xs text-base-content/40">none</span>
+            <% end %>
+          </td>
+          <td class="text-right whitespace-nowrap">
+            <%= link_to "Edit", edit_admin_user_path(u), class: "btn btn-ghost btn-xs" %>
+            <% unless u == current_admin || (u.admin? && User.admin.count <= 1) %>
+              <%= button_to "Delete", admin_user_path(u), method: :delete,
+                    form: { class: "inline", data: { turbo_confirm: "Delete #{u.email}?" } },
+                    class: "btn btn-ghost btn-xs text-error" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

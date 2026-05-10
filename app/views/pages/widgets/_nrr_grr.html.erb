@@ -1,0 +1,33 @@
+<% w = nrr_grr_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].first[:data].any? %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button" data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Reset zoom">Reset</button>
+        <button type="button" data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Fullscreen">↔</button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= line_chart w[:data],
+              id:      w[:chart_id],
+              height:  "260px",
+              suffix:  "%",
+              round:   1,
+              colors:  w[:colors],
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      <strong>NRR</strong> = (start MRR + expansion − contraction − churn) ÷ start MRR. Above 100% means existing customers are paying more than last month, even with churn.
+      <strong>GRR</strong> excludes expansion — caps at 100%.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">
+      Need at least two months of snapshot data with paying customers.
+    </p>
+  <% end %>
+</div>

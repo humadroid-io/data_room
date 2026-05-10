@@ -1,0 +1,4 @@
+<% content_for :title, "Edit attribute" %>
+<% content_for :page_title, @definition.label %>
+<% content_for :page_subtitle, "#{@definition.resource_type} · #{@definition.key}" %>
+<%= render "form", definition: @definition %>

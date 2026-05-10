@@ -1,0 +1,47 @@
+<%
+  # Group customers by a single-select Customer attribute. Pass the key
+  # explicitly via [CUSTOMER_PIPELINE:my_attribute_key], or omit the arg
+  # to fall back to the first single-select attribute on Customer.
+  key = local_assigns[:attribute_key].presence ||
+        AttributeDefinition.for_resource(Customer).where(data_type: :single_select).first&.key
+
+  defn = key && AttributeDefinition.find_by(resource_type: "Customer", key: key)
+%>
+
+<div class="my-6 not-prose">
+  <% if defn %>
+    <% groups = Customer.includes(:subscriptions).group_by { |c| c.custom_attribute(defn.key) } %>
+    <div class="overflow-x-auto border border-base-300 rounded-md">
+      <table class="table table-sm">
+        <thead class="text-xs uppercase tracking-wide text-base-content/60">
+          <tr>
+            <th><%= defn.label %></th>
+            <th class="text-right">Customers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% (defn.options || []).each do |opt| %>
+            <% rows = (groups[opt["value"]] || []) %>
+            <tr>
+              <td><span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %>"><%= opt["label"] %></span></td>
+              <td class="text-right tabular-nums"><%= rows.size %></td>
+            </tr>
+          <% end %>
+          <% unset = groups[nil] || [] %>
+          <% if unset.any? %>
+            <tr>
+              <td><span class="text-base-content/60 text-sm">— unset —</span></td>
+              <td class="text-right tabular-nums text-base-content/60"><%= unset.size %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="text-sm text-base-content/60">
+      No single-select Customer attribute configured. Define one under
+      <strong>Admin → Attributes</strong>, then place this widget as
+      <code>[CUSTOMER_PIPELINE:your_attribute_key]</code>.
+    </p>
+  <% end %>
+</div>

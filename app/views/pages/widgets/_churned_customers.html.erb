@@ -1,0 +1,39 @@
+<% rows = churned_customers_widget %>
+
+<div class="my-6 not-prose">
+  <% if rows.any? %>
+    <div class="overflow-x-auto border border-base-300 rounded-md">
+      <table class="table table-sm">
+        <thead class="text-xs uppercase tracking-wide text-base-content/60">
+          <tr>
+            <th>Churned</th>
+            <th>Customer</th>
+            <th>Reason</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.each do |row| %>
+            <tr>
+              <td class="whitespace-nowrap text-base-content/70"><%= row[:churned_on].to_fs(:long) %></td>
+              <td class="font-medium"><%= row[:label] %></td>
+              <td>
+                <% if row[:category_text] %>
+                  <span class="badge badge-soft badge-sm"><%= row[:category_text] %></span>
+                <% else %>
+                  <span class="text-base-content/40">—</span>
+                <% end %>
+              </td>
+              <td class="text-sm text-base-content/70"><%= row[:notes] %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      <%= rows.size %> churned customer<%= 's' unless rows.size == 1 %> documented.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No churned customers documented yet.</p>
+  <% end %>
+</div>
