@@ -15,7 +15,7 @@ not a refactor.
 | Layer            | Choice                                              |
 | ---------------- | --------------------------------------------------- |
 | Framework        | Rails 8.1                                           |
-| Language         | Ruby 3.4                                            |
+| Language         | Ruby 4.0                                            |
 | Database         | SQLite (`solid_queue`, `solid_cache`, `solid_cable`) |
 | Frontend         | Hotwire (Turbo + Stimulus), no SPA                  |
 | Rich text        | Lexxy on top of Action Text                         |
@@ -88,6 +88,7 @@ Both can be set at the same time (admin impersonating an investor).
 `slug = ""` and `path = "/"`; everything else has a slug-derived path.
 
 Renaming a slug or moving a page automatically:
+
 - recomputes the path,
 - recomputes descendant paths,
 - writes a `PageRedirect` so old bookmarks keep working.
@@ -279,10 +280,12 @@ mean something to your business. It flows through the system like this:
    `product_code → stripe_price_id → "—"`. Add a mapping later, click Sync
    now, and the friendly name lights up everywhere historical, retroactively.
 3. **`Subscription` scopes** use the codes:
+
    ```ruby
    Subscription.for_product("starter")  # WHERE product_code = 'starter'
    Subscription.active_now              # active + trialing
    ```
+
 4. **`[MONTHLY_REVENUE]`** stacks payments by month, attributing each
    payment to its subscription's product (or raw `stripe_price_id` for
    unmapped, or "Other" for one-off payments).
