@@ -1,0 +1,25 @@
+<div class="grid grid-cols-12 gap-2 items-start" data-nested-form-row>
+  <div class="col-span-3">
+    <%= form.text_field :value, class: "input input-bordered input-sm w-full font-mono text-xs",
+          placeholder: "snake_case", aria_label: "Value" %>
+  </div>
+  <div class="col-span-4">
+    <%= form.text_field :label, class: "input input-bordered input-sm w-full",
+          placeholder: "Display label", aria_label: "Label" %>
+  </div>
+  <div class="col-span-3">
+    <%= form.select :color,
+          AttributeOption::COLORS.map { |c| [ c.titleize, c ] },
+          { include_blank: "— color —" },
+          class: "select select-bordered select-sm w-full" %>
+  </div>
+  <div class="col-span-1">
+    <%= form.number_field :sort_order, class: "input input-bordered input-sm w-full text-xs",
+          aria_label: "Sort order" %>
+  </div>
+  <div class="col-span-1 flex items-center justify-end h-8">
+    <%= form.hidden_field :_destroy %>
+    <button type="button" class="btn btn-ghost btn-xs text-error"
+            data-action="nested-form#remove" aria-label="Remove option">×</button>
+  </div>
+</div>

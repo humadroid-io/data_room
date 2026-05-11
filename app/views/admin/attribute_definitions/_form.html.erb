@@ -34,11 +34,35 @@
     <%= f.text_area :description, rows: 2, class: "textarea textarea-bordered w-full" %>
   </div>
 
-  <div>
-    <label class="label label-text text-xs uppercase tracking-wide">Options (JSON, only for select types)</label>
-    <textarea name="attribute_definition[options_json]" rows="6"
-              class="textarea textarea-bordered w-full font-mono text-xs"
-              placeholder='[{"value":"foo","label":"Foo","color":"blue"}]'><%= JSON.pretty_generate(definition.options) if definition.options.present? %></textarea>
+  <div data-controller="nested-form" class="space-y-3">
+    <div class="flex items-center justify-between">
+      <label class="label label-text text-xs uppercase tracking-wide m-0">Options <span class="text-base-content/40 normal-case">(for single_select / multi_select)</span></label>
+      <button type="button" class="btn btn-ghost btn-xs" data-action="nested-form#add">+ Add option</button>
+    </div>
+
+    <% if definition.attribute_options.any? %>
+      <div class="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wide text-base-content/50 px-1">
+        <div class="col-span-3">Value</div>
+        <div class="col-span-4">Label</div>
+        <div class="col-span-3">Color</div>
+        <div class="col-span-1">Order</div>
+        <div class="col-span-1"></div>
+      </div>
+    <% end %>
+
+    <div class="space-y-2" data-nested-form-target="target">
+      <%= f.fields_for :attribute_options do |of| %>
+        <%= render "option_fields", form: of %>
+      <% end %>
+    </div>
+
+    <template data-nested-form-target="template">
+      <%= f.fields_for :attribute_options,
+            AttributeOption.new,
+            child_index: "NEW_RECORD" do |of| %>
+        <%= render "option_fields", form: of %>
+      <% end %>
+    </template>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

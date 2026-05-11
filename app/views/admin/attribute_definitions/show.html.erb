@@ -47,15 +47,15 @@
       </div>
     <% end %>
 
-    <% if @definition.select_type? && @definition.options.present? %>
+    <% if @definition.select_type? && @definition.attribute_options.any? %>
       <div class="pt-4 border-t border-base-300">
         <dt class="text-xs uppercase tracking-wide text-base-content/50 mb-2">Options</dt>
         <dd>
           <ul class="space-y-1">
-            <% @definition.options.each do |opt| %>
+            <% @definition.attribute_options.each do |opt| %>
               <li class="flex items-center gap-2 text-sm">
-                <span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %> badge-sm"><%= opt["label"] %></span>
-                <code class="text-xs text-base-content/60"><%= opt["value"] %></code>
+                <span class="badge badge-soft badge-<%= opt.color.presence || 'neutral' %> badge-sm"><%= opt.label %></span>
+                <code class="text-xs text-base-content/60"><%= opt.value %></code>
               </li>
             <% end %>
           </ul>

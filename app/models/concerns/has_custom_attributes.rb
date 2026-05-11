@@ -25,11 +25,11 @@ module HasCustomAttributes
     return value if value.blank?
     return value unless %w[single_select multi_select].include?(defn.data_type)
 
-    options_map = (defn.options || []).index_by { |o| o["value"] }
+    options_map = defn.attribute_options.index_by(&:value)
     if defn.single_select?
-      options_map[value]&.dig("label") || value
+      options_map[value]&.label || value
     else
-      Array(value).map { |v| options_map[v]&.dig("label") || v }
+      Array(value).map { |v| options_map[v]&.label || v }
     end
   end
 
@@ -67,7 +67,7 @@ module HasCustomAttributes
           errors.add(:custom_attributes, "#{defn.label} is not a valid date")
         end
       when "single_select"
-        valid = (defn.options || []).map { |o| o["value"] }
+        valid = defn.attribute_options.map(&:value)
         unless valid.include?(value)
           errors.add(:custom_attributes, "#{defn.label} has invalid value")
         end
@@ -75,7 +75,7 @@ module HasCustomAttributes
         unless value.is_a?(Array)
           errors.add(:custom_attributes, "#{defn.label} must be an array")
         else
-          valid = (defn.options || []).map { |o| o["value"] }
+          valid = defn.attribute_options.map(&:value)
           if (value - valid).any?
             errors.add(:custom_attributes, "#{defn.label} has invalid values")
           end

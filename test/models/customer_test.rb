@@ -51,12 +51,12 @@ class CustomerTest < ActiveSupport::TestCase
   end
 
   test "captured_attributes_for_snapshot only returns captured keys" do
-    create(:captured_attribute, key: "stage", options: [ { "value" => "s1", "label" => "S1" } ])
+    create(:captured_attribute, key: "stage")
     create(:attribute_definition, resource_type: "Customer", key: "industry",
            data_type: :string, label: "Industry")
 
-    customer = create(:customer, custom_attributes: { "stage" => "s1", "industry" => "saas" })
-    assert_equal({ "stage" => "s1" }, customer.captured_attributes_for_snapshot)
+    customer = create(:customer, custom_attributes: { "stage" => "stage1", "industry" => "saas" })
+    assert_equal({ "stage" => "stage1" }, customer.captured_attributes_for_snapshot)
   end
 
   test "custom_attribute_label returns option label for select" do

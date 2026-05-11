@@ -42,4 +42,34 @@ class AttributeDefinitionTest < ActiveSupport::TestCase
     assert_includes AttributeDefinition.captured, captured
     assert_equal 1, AttributeDefinition.captured.count
   end
+
+  test "select types require at least one option" do
+    defn = build(:attribute_definition, key: "stage", data_type: :single_select)
+    assert_not defn.valid?
+    assert defn.errors[:attribute_options].any?
+  end
+
+  test "non-select types do not require options" do
+    defn = build(:attribute_definition, key: "team_size", data_type: :integer)
+    assert defn.valid?
+  end
+
+  test "destroying a definition removes its options" do
+    defn = create(:single_select_attribute, key: "stage")
+    opt_ids = defn.attribute_options.pluck(:id)
+    assert opt_ids.any?
+
+    defn.destroy
+    assert_equal 0, AttributeOption.where(id: opt_ids).count
+  end
+
+  test "rejects nested option rows with both blank value and label" do
+    defn = build(:attribute_definition, key: "stage", data_type: :single_select,
+                 attribute_options_attributes: [
+                   { value: "real", label: "Real" },
+                   { value: "",     label: "" }
+                 ])
+    assert defn.valid?
+    assert_equal 1, defn.attribute_options.size
+  end
 end

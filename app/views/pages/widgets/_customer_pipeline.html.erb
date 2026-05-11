@@ -20,10 +20,10 @@
           </tr>
         </thead>
         <tbody>
-          <% (defn.options || []).each do |opt| %>
-            <% rows = (groups[opt["value"]] || []) %>
+          <% defn.attribute_options.each do |opt| %>
+            <% rows = (groups[opt.value] || []) %>
             <tr>
-              <td class="!py-2.5 !px-3"><span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %>"><%= opt["label"] %></span></td>
+              <td class="!py-2.5 !px-3"><span class="badge badge-soft badge-<%= opt.color.presence || 'neutral' %>"><%= opt.label %></span></td>
               <td class="text-right tabular-nums !py-2.5 !px-3"><%= rows.size %></td>
             </tr>
           <% end %>

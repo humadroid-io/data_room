@@ -145,7 +145,7 @@ class PagesHelperTest < ActionView::TestCase
 
   test "retention_cohort_widget honors an explicitly passed key" do
     create(:captured_attribute, key: "stage")
-    create(:captured_attribute, key: "lifecycle", options: [ { "value" => "x", "label" => "X" } ])
+    create(:captured_attribute, key: "lifecycle")
     w = retention_cohort_widget("lifecycle")
     assert_equal "lifecycle", w[:key]
   end

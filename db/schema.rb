@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_11_100001) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_11_120001) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -56,13 +56,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_11_100001) do
     t.text "description"
     t.string "key", null: false
     t.string "label", null: false
-    t.json "options"
     t.boolean "required", default: false, null: false
     t.string "resource_type", null: false
     t.integer "sort_order", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["resource_type", "key"], name: "index_attribute_definitions_on_resource_type_and_key", unique: true
     t.index ["resource_type", "sort_order"], name: "index_attribute_definitions_on_resource_type_and_sort_order"
+  end
+
+  create_table "attribute_options", force: :cascade do |t|
+    t.integer "attribute_definition_id", null: false
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.string "label", null: false
+    t.integer "sort_order", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.string "value", null: false
+    t.index ["attribute_definition_id", "sort_order"], name: "index_attribute_options_on_definition_and_sort"
+    t.index ["attribute_definition_id", "value"], name: "index_attribute_options_on_definition_and_value", unique: true
+    t.index ["attribute_definition_id"], name: "index_attribute_options_on_attribute_definition_id"
   end
 
   create_table "customers", force: :cascade do |t|
@@ -228,6 +240,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_11_100001) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "attribute_options", "attribute_definitions"
   add_foreign_key "page_accesses", "investors"
   add_foreign_key "page_accesses", "pages"
   add_foreign_key "page_redirects", "pages"

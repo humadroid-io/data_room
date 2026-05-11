@@ -21,6 +21,7 @@ class Admin::AttributeDefinitionsController < Admin::BaseController
       resource_type: params[:resource_type] || "Customer",
       data_type:     :string
     )
+    @definition.attribute_options.build
   end
 
   def edit; end
@@ -54,18 +55,10 @@ class Admin::AttributeDefinitionsController < Admin::BaseController
   end
 
   def definition_params
-    raw = params.require(:attribute_definition).permit(
+    params.require(:attribute_definition).permit(
       :resource_type, :key, :label, :description, :data_type,
-      :required, :capture_on_snapshot, :sort_order, :options_json
+      :required, :capture_on_snapshot, :sort_order,
+      attribute_options_attributes: [ :id, :value, :label, :color, :sort_order, :_destroy ]
     )
-    options_json = raw.delete(:options_json)
-    if options_json.present?
-      begin
-        raw[:options] = JSON.parse(options_json)
-      rescue JSON::ParserError
-        raw[:options] = []
-      end
-    end
-    raw
   end
 end

@@ -28,20 +28,20 @@ module CustomAttributesHelper
     when "single_select"
       # Prepend the blank option so options_for_select can mark it selected
       # when current_value is nil/"". Otherwise nothing appears chosen.
-      choices = [ [ "— none —", "" ] ] + (defn.options || []).map { |o| [ o["label"], o["value"] ] }
+      choices = [ [ "— none —", "" ] ] + defn.attribute_options.map { |o| [ o.label, o.value ] }
       content_tag(:select, options_for_select(choices, current_value.to_s),
                   name: custom_attribute_field_name(form, defn), class: "select select-bordered w-full")
     when "multi_select"
       content_tag(:div, class: "flex flex-wrap gap-3 p-2 border border-base-300 rounded-md") do
         hidden = tag.input(type: "hidden", name: "#{custom_attribute_field_name(form, defn)}[]", value: "")
-        opts = (defn.options || []).map do |o|
-          checked = Array(current_value).include?(o["value"])
+        opts = defn.attribute_options.map do |o|
+          checked = Array(current_value).include?(o.value)
           tag.label(class: "flex items-center gap-2 text-sm cursor-pointer") do
             tag.input(type: "checkbox",
                       name: "#{custom_attribute_field_name(form, defn)}[]",
-                      value: o["value"],
+                      value: o.value,
                       checked: checked,
-                      class: "checkbox checkbox-xs") + tag.span(o["label"])
+                      class: "checkbox checkbox-xs") + tag.span(o.label)
           end
         end
         safe_join([ hidden ] + opts)
@@ -54,16 +54,16 @@ module CustomAttributesHelper
 
     case defn.data_type
     when "single_select"
-      opt = (defn.options || []).find { |o| o["value"] == value }
-      label = opt&.dig("label") || value
-      color = opt&.dig("color") || "neutral"
+      opt = defn.attribute_options.find { |o| o.value == value }
+      label = opt&.label || value
+      color = opt&.color.presence || "neutral"
       content_tag(:span, label, class: "badge badge-soft badge-#{color}")
     when "multi_select"
-      opts_map = (defn.options || []).index_by { |o| o["value"] }
+      opts_map = defn.attribute_options.index_by(&:value)
       safe_join(Array(value).map { |v|
         opt = opts_map[v]
-        content_tag(:span, opt&.dig("label") || v,
-                    class: "badge badge-soft badge-#{opt&.dig('color') || 'neutral'} mr-1")
+        content_tag(:span, opt&.label || v,
+                    class: "badge badge-soft badge-#{opt&.color.presence || 'neutral'} mr-1")
       })
     when "boolean"
       content_tag(:span, value ? "Yes" : "No", class: "badge badge-sm")
