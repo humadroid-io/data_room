@@ -445,16 +445,23 @@ module PagesHelper
 
   # ----- Support: customer concentration -----------------------------------
 
+  # Per-customer effective MRR across their currently active/trialing subs.
+  # Uses `Subscription#effective_mrr_cents_usd` so discounts and coupons
+  # are reflected — matches the MRR walk / NRR / quick-ratio convention.
+  # Falls back to nominal mrr_cents_usd when a sub has no payment yet.
   def active_mrr_per_customer
-    rows = Customer
-      .joins(:subscriptions)
-      .where(subscriptions: { status: [ Subscription.statuses[:active], Subscription.statuses[:trialing] ] })
-      .group("customers.id", "customers.name", "customers.anonymized_label")
-      .sum("subscriptions.mrr_cents_usd")
-
-    rows.map do |(id, name, anon), cents|
-      { id: id, label: anon.presence || name, mrr_cents: cents }
+    rows = {}
+    Subscription
+      .active_now
+      .includes(:customer)
+      .find_each do |sub|
+      customer = sub.customer
+      row = (rows[customer.id] ||= { id: customer.id,
+                                     label: customer.anonymized_label.presence || customer.name,
+                                     mrr_cents: 0 })
+      row[:mrr_cents] += sub.effective_mrr_cents_usd
     end
+    rows.values
   end
 
   # ----- Support: cohort retention -----------------------------------------

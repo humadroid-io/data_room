@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "../../../node_modules/@37signals/lexxy/dist/stylesheets/lexxy-variables.css";
+@import "../../../node_modules/@37signals/lexxy/dist/stylesheets/lexxy-content.css";
+@import "../../../node_modules/@37signals/lexxy/dist/stylesheets/lexxy-editor.css";
+
 @plugin "daisyui" {
   themes: light --default;
   root: ":root";
@@ -104,6 +108,21 @@
   }
   .prose-page th {
     @apply bg-base-200 font-semibold;
+  }
+
+  /* Lexxy exports strikethrough as <s> and underline as <u> tags (see
+   * lexxy.esm.js: exportTextNodeDOM). Tailwind preflight resets default
+   * text-decoration, so the browser's built-in styling is gone. Re-apply
+   * everywhere rich text renders. */
+  :where(.lexxy-content, .prose-page) u,
+  :where(.lexxy-content, .prose-page) ins {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  :where(.lexxy-content, .prose-page) s,
+  :where(.lexxy-content, .prose-page) del,
+  :where(.lexxy-content, .prose-page) strike {
+    text-decoration: line-through;
   }
 
   .callout-tldr {

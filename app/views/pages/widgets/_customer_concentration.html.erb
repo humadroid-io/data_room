@@ -34,6 +34,7 @@
     </div>
     <p class="mt-2 text-xs text-base-content/50">
       Top 10 customers ranked by active MRR (out of $<%= number_with_delimiter(w[:total_dollars]) %> total).
+      Each customer's MRR is their latest payment ÷ billing interval, so discounts are reflected — these are real cash, not list price.
       Bars turn red when a single account is ≥25% of total — a concentration risk investors flag.
     </p>
   <% else %>

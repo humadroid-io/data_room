@@ -132,5 +132,11 @@
     <% if investor_signed_in? %>
       <div class="watermark"><%= current_investor.watermark_label %></div>
     <% end %>
+
+    <footer class="max-w-6xl mx-auto px-6 pb-8 text-xs text-base-content/30 text-center">
+      Proudly vibe-coded in Poznań by
+      <%= link_to "humadroid.io", "https://humadroid.io", target: "_blank", rel: "noopener", title: "AI-first compliance management", class: "underline underline-offset-2 hover:text-base-content/50 transition" %>
+      team.
+    </footer>
   </body>
 </html>

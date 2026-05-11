@@ -481,6 +481,32 @@ class PagesHelperTest < ActionView::TestCase
     assert_empty w[:rows]
   end
 
+  test "customer_concentration_widget reflects discounts via latest payment" do
+    full_price = create(:customer, name: "Full Price")
+    discounted = create(:customer, name: "Discounted")
+
+    sub_full = create(:subscription, customer: full_price, mrr_cents: 10_000,
+                                      currency: "usd", interval_months: 1, status: :active)
+    sub_disc = create(:subscription, customer: discounted, mrr_cents: 10_000,
+                                      currency: "usd", interval_months: 1, status: :active)
+    # Both have $100 nominal MRR, but the discounted customer is actually
+    # paying $40/mo (60% off coupon).
+    create(:payment, customer: full_price, subscription: sub_full,
+                     amount_cents: 10_000, currency: "usd", paid_at: 1.day.ago)
+    create(:payment, customer: discounted, subscription: sub_disc,
+                     amount_cents:  4_000, currency: "usd", paid_at: 1.day.ago)
+
+    w = customer_concentration_widget
+    full_row = w[:rows].find { |r| r[:label] == "Full Price" }
+    disc_row = w[:rows].find { |r| r[:label] == "Discounted" }
+
+    assert_equal 100, full_row[:dollars]
+    assert_equal 40,  disc_row[:dollars]            # post-discount, not the $100 list
+    assert_equal 140, w[:total_dollars]
+    # Full Price is the larger share: 100/140 ≈ 71.4%
+    assert_in_delta 71.4, full_row[:percentage], 0.1
+  end
+
   # --- cohort_retention_widget --------------------------------------------
 
   test "cohort_retention_widget builds one series per cohort with retention %" do
