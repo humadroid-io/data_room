@@ -21,7 +21,7 @@ gem "cssbundling-rails"
 gem "bcrypt", "~> 3.1.7"
 
 # Rich text editor on top of Action Text
-gem "lexxy", "~> 0.1.4.beta"
+gem "lexxy", "~> 0.9.11.beta"
 
 # Stripe API client for syncing subscriptions
 gem "stripe"
