@@ -42,6 +42,53 @@ class PagesHelperTest < ActionView::TestCase
     assert_no_match(/Secret/, rendered)
   end
 
+  test "render_page_body includes private children allowlisted for the investor" do
+    secret = create(:child_page, slug: "s", parent_page: @page, title: "Secret",
+                                  visibility: :private)
+    create(:page_access, page: secret, investor: @investor)
+
+    @page.body = "[CHILD_PAGES]"
+    @page.save!
+
+    assert_match "Secret", render_page_body(@page, @investor)
+  end
+
+  test "render_page_body includes all children when browsing directly as admin" do
+    stubs(:viewing_as_admin?).returns(true)
+    create(:child_page, slug: "draft", parent_page: @page, title: "Draft Child",
+                        visibility: :draft)
+    create(:child_page, slug: "private", parent_page: @page, title: "Private Child",
+                        visibility: :private)
+
+    @page.body = "[CHILD_PAGES]"
+    @page.save!
+
+    rendered = render_page_body(@page, nil)
+    assert_match "Draft Child", rendered
+    assert_match "Private Child", rendered
+  end
+
+  test "CHILD_PAGES_2_COL on landing page renders top-level pages except landing" do
+    landing = create(:landing_page, title: "Landing")
+    create(:section_page, slug: "public-section", title: "Public Section")
+    private_section = create(:section_page, slug: "private-section", title: "Private Section",
+                                            visibility: :private)
+    create(:section_page, slug: "hidden-section", title: "Hidden Section",
+                          visibility: :private)
+    create(:page_access, page: private_section, investor: @investor)
+
+    landing.body = "[CHILD_PAGES_2_COL]"
+    landing.save!
+
+    rendered = render_page_body(landing, @investor)
+    assert_match "sm:grid-cols-2", rendered
+    assert_match "Public Section", rendered
+    assert_match "Private Section", rendered
+    assert_no_match(/Hidden Section/, rendered)
+    assert_no_match(/Landing/, rendered)
+    assert_no_match(%r{href="/"}, rendered)
+  end
+
   test "leaves unknown tokens alone" do
     @page.body = "[UNKNOWN_TOKEN]"
     @page.save!

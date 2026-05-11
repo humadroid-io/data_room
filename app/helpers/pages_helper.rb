@@ -36,9 +36,23 @@ module PagesHelper
   end
 
   def render_children_list(page, investor, cols:)
-    children = page.visible_children_for(investor)
+    children = visible_pages_for_widget(child_pages_widget_scope(page, cols: cols), investor)
     render(partial: "pages/widgets/children_list",
            locals:  { children: children, cols: cols })
+  end
+
+  def child_pages_widget_scope(page, cols:)
+    if cols == 2 && page.root_landing?
+      Page.where(parent_id: nil).where.not(path: "/").ordered
+    else
+      page.children
+    end
+  end
+
+  def visible_pages_for_widget(scope, investor)
+    return scope.to_a if respond_to?(:viewing_as_admin?) && viewing_as_admin?
+
+    scope.live.select { |child| child.visible_to?(investor) }
   end
 
   # Returns chartkick-ready data for a stacked-area "revenue per month per

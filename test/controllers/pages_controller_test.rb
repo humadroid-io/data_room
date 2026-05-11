@@ -59,6 +59,51 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "CHILD_PAGES includes private children allowlisted for the investor" do
+    private_child = create(:child_page, slug: "secret", parent_page: @section,
+                                        title: "Secret Child", visibility: :private)
+    create(:page_access, page: private_child, investor: @investor)
+    @section.body = "[CHILD_PAGES]"
+    @section.save!
+
+    sign_in_investor(@investor)
+    get "/company"
+    assert_response :success
+    assert_match "Secret Child", response.body
+  end
+
+  test "CHILD_PAGES includes draft and private children for direct admin browsing" do
+    create(:child_page, slug: "draft", parent_page: @section,
+                        title: "Draft Child", visibility: :draft)
+    create(:child_page, slug: "private", parent_page: @section,
+                        title: "Private Child", visibility: :private)
+    @section.body = "[CHILD_PAGES]"
+    @section.save!
+
+    sign_in_admin
+    get "/company"
+    assert_response :success
+    assert_match "Draft Child", response.body
+    assert_match "Private Child", response.body
+  end
+
+  test "CHILD_PAGES_2_COL on landing renders accessible top-level sections" do
+    private_section = create(:section_page, slug: "secret-section",
+                                            title: "Secret Section", visibility: :private)
+    create(:section_page, slug: "hidden-section",
+                          title: "Hidden Section", visibility: :private)
+    create(:page_access, page: private_section, investor: @investor)
+    @landing.body = "[CHILD_PAGES_2_COL]"
+    @landing.save!
+
+    sign_in_investor(@investor)
+    get root_path
+    assert_response :success
+    assert_match @section.title, response.body
+    assert_match "Secret Section", response.body
+    assert_no_match(/Hidden Section/, response.body)
+  end
+
   test "draft page is not findable for investors" do
     @child.update!(visibility: :draft)
     sign_in_investor(@investor)
