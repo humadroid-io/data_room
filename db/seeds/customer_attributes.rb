@@ -6,15 +6,16 @@ def seed_attribute(resource_type:, key:, label:, data_type:, sort_order:,
   defn.required            = required
   defn.capture_on_snapshot = capture_on_snapshot
   defn.sort_order          = sort_order
-  defn.save!
 
   options.each_with_index do |opt, idx|
-    row = defn.attribute_options.find_or_initialize_by(value: opt[:value])
+    row = defn.attribute_options.find { |o| o.value == opt[:value] } ||
+          defn.attribute_options.build(value: opt[:value])
     row.label      = opt[:label]
     row.color      = opt[:color]
     row.sort_order = idx
-    row.save!
   end
+
+  defn.save!
 end
 
 seed_attribute(
