@@ -63,10 +63,10 @@ class Admin::CustomersController < Admin::BaseController
       raw = submitted[defn.key] || submitted[defn.key.to_sym]
       next if raw.nil?
       value = case defn.data_type
-              when "multi_select" then Array(raw).compact_blank
-              when "boolean"      then ActiveModel::Type::Boolean.new.cast(raw)
-              else raw
-              end
+      when "multi_select" then Array(raw).compact_blank
+      when "boolean"      then ActiveModel::Type::Boolean.new.cast(raw)
+      else raw
+      end
       next if value.is_a?(String) && value.strip.empty?
       next if value.is_a?(Array)  && value.empty?
       result[defn.key] = value
