@@ -1,0 +1,30 @@
+<% w = account_movements_widget %>
+
+<div class="my-6 not-prose">
+  <% if w[:data].any? && w[:data].any? { |series| series[:data].values.any?(&:positive?) } %>
+    <div class="chart-wrapper"
+         data-controller="chart-zoom"
+         data-chart-zoom-id-value="<%= w[:chart_id] %>">
+      <div class="chart-toolbar">
+        <button type="button" data-action="chart-zoom#reset"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Reset zoom">Reset</button>
+        <button type="button" data-action="chart-zoom#toggleFullscreen"
+                class="btn btn-ghost btn-xs bg-base-100 border border-base-300" title="Fullscreen">↔</button>
+      </div>
+      <div data-chart-zoom-target="host" class="chart-host">
+        <%= column_chart w[:data],
+              id:      w[:chart_id],
+              height:  "280px",
+              round:   0,
+              colors:  w[:colors],
+              library: w[:library] %>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-base-content/50">
+      New accounts became active during the month; churned accounts were active at month start but inactive by month end.
+      Counts are unique customers, not subscriptions.
+    </p>
+  <% else %>
+    <p class="text-sm text-base-content/60">No account movement recorded in the trailing 12 months.</p>
+  <% end %>
+</div>

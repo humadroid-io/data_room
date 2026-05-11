@@ -119,6 +119,8 @@ replaces them at render time. Two of them accept an optional argument after
 | `[MONTHLY_REVENUE]`                  | Stacked-area chart of cash collected per month (from imported Stripe payments), one band per product |
 | `[CUSTOMER_PIPELINE:attribute_key]`  | Table of customers grouped by a single-select Customer attribute          |
 | `[RETENTION_COHORT:attribute_key]`   | Stacked area of distinct customers by month, grouped by a captured single-select attribute |
+| `[ACCOUNT_MOVEMENTS]`                | Column chart of absolute new accounts and churned accounts per month      |
+| `[ACTIVE_ACCOUNTS]`                  | Line chart of month-end active account count                              |
 | `[CHURNED_CUSTOMERS]`                | Table of customers who churned (date, anonymized label, reason category, notes) |
 | `[CHURN_REASONS]`                    | Bar chart of churn-reason categories, sorted by count                     |
 | `[CHURN_RATE]`                       | Monthly logo-churn rate (%) over the trailing 12 months                   |

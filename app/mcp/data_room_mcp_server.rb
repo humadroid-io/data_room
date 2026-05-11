@@ -10,7 +10,7 @@ module DataRoomMcpServer
   INSTRUCTIONS = <<~TEXT
     Tools for managing the Data Room content. Use list_pages to discover
     the structure, get_page to read content, and create_page / update_page
-    to author. Widget tokens (e.g. [CHILD_PAGES], [MOMS_GROWTH_CHART]) inside
+    to author. Widget tokens (e.g. [CHILD_PAGES], [ACCOUNT_MOVEMENTS]) inside
     body_html are rendered server-side at view time.
   TEXT
 

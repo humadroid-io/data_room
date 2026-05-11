@@ -809,7 +809,7 @@ Widgets via placeholder tokens parsed at render time.
 ```ruby
 # app/helpers/pages_helper.rb
 module PagesHelper
-  WIDGET_RE = /\[(CHILD_PAGES|CHILD_PAGES_2_COL|CUSTOMER_PIPELINE|MOMS_GROWTH_CHART|RETENTION_COHORT)\]/
+  WIDGET_RE = /\[([A-Z][A-Z0-9_]*)(?::([a-z][a-z0-9_]*))?\]/
 
   def render_page_body(page, investor)
     html = page.body.to_s
@@ -818,8 +818,10 @@ module PagesHelper
       when 'CHILD_PAGES'         then render_children_list(page, investor, cols: 1)
       when 'CHILD_PAGES_2_COL'   then render_children_list(page, investor, cols: 2)
       when 'CUSTOMER_PIPELINE'   then render(partial: 'pages/widgets/customer_pipeline')
-      when 'MOMS_GROWTH_CHART'   then render(partial: 'pages/widgets/moms_growth_chart')
       when 'RETENTION_COHORT'    then render(partial: 'pages/widgets/retention_cohort')
+      when 'ACCOUNT_MOVEMENTS'   then render(partial: 'pages/widgets/account_movements')
+      when 'ACTIVE_ACCOUNTS'     then render(partial: 'pages/widgets/active_accounts')
+      when 'MONTHLY_REVENUE'     then render(partial: 'pages/widgets/monthly_revenue')
       end
     end.html_safe
   end

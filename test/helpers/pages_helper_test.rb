@@ -17,6 +17,18 @@ class PagesHelperTest < ActionView::TestCase
     assert_match "outro", rendered
   end
 
+  test "render_page_body replaces CHILD_PAGES_2_COL token" do
+    create(:child_page, slug: "child-1", parent_page: @page, title: "Child One")
+    create(:child_page, slug: "child-2", parent_page: @page, title: "Child Two")
+    @page.body = "[CHILD_PAGES_2_COL]"
+    @page.save!
+
+    rendered = render_page_body(@page, @investor)
+    assert_match "sm:grid-cols-2", rendered
+    assert_match "Child One", rendered
+    assert_match "Child Two", rendered
+  end
+
   test "render_page_body hides children that the investor can't see" do
     visible = create(:child_page, slug: "v", parent_page: @page, title: "Visible")
     secret  = create(:child_page, slug: "s", parent_page: @page, title: "Secret",
@@ -34,6 +46,17 @@ class PagesHelperTest < ActionView::TestCase
     @page.body = "[UNKNOWN_TOKEN]"
     @page.save!
     assert_match "[UNKNOWN_TOKEN]", render_page_body(@page, @investor)
+  end
+
+  test "render_page_body replaces account count widget tokens" do
+    @page.body = "[ACCOUNT_MOVEMENTS] [ACTIVE_ACCOUNTS]"
+    @page.save!
+
+    rendered = render_page_body(@page, @investor)
+    assert_no_match(/\[ACCOUNT_MOVEMENTS\]/, rendered)
+    assert_no_match(/\[ACTIVE_ACCOUNTS\]/, rendered)
+    assert_match "No account movement recorded", rendered
+    assert_match "No active accounts recorded", rendered
   end
 
   # --- monthly_revenue_chart_data ------------------------------------------
@@ -268,6 +291,108 @@ class PagesHelperTest < ActionView::TestCase
     assert w[:data].is_a?(Array)
     assert_match(/\Achurn-rate-/, w[:chart_id])
     assert w[:library][:plugins][:zoom][:zoom][:wheel][:enabled]
+  end
+
+  # --- account count widgets ----------------------------------------------
+
+  test "monthly_account_activity counts new, churned, and active accounts by month" do
+    travel_to Date.new(2026, 6, 15) do
+      retained = create(:customer)
+      new_account = create(:customer)
+      churned = create(:customer)
+
+      create(:subscription, customer: retained,
+                            started_at: Date.new(2026, 1, 1), canceled_at: nil)
+      create(:subscription, customer: new_account,
+                            started_at: Date.new(2026, 5, 10), canceled_at: nil)
+      create(:subscription, customer: churned,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: Date.new(2026, 5, 20),
+                            status: :canceled)
+
+      may = monthly_account_activity(months_back: 2)["2026-05"]
+      assert_equal 2, may[:active_start]
+      assert_equal 2, may[:active_end]
+      assert_equal 1, may[:new]
+      assert_equal 1, may[:churn]
+    end
+  end
+
+  test "monthly_account_activity counts each customer once across multiple subscriptions" do
+    travel_to Date.new(2026, 6, 15) do
+      customer = create(:customer)
+      create(:subscription, customer: customer,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: Date.new(2026, 5, 10),
+                            status: :canceled)
+      create(:subscription, customer: customer,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: nil)
+
+      may = monthly_account_activity(months_back: 2)["2026-05"]
+      assert_equal 1, may[:active_start]
+      assert_equal 1, may[:active_end]
+      assert_equal 0, may[:new]
+      assert_equal 0, may[:churn]
+    end
+  end
+
+  test "monthly_churn_rate is derived from monthly account activity" do
+    travel_to Date.new(2026, 6, 15) do
+      2.times do
+        customer = create(:customer)
+        create(:subscription, customer: customer,
+                              started_at: Date.new(2026, 1, 1), canceled_at: nil)
+      end
+      churning = create(:customer)
+      create(:subscription, customer: churning,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: Date.new(2026, 5, 20),
+                            status: :canceled)
+
+      assert_equal 33.33, monthly_churn_rate(months_back: 2)["2026-05"]
+    end
+  end
+
+  test "account_movements_widget returns new and churned account series" do
+    travel_to Date.new(2026, 6, 15) do
+      new_account = create(:customer)
+      churned = create(:customer)
+      create(:subscription, customer: new_account,
+                            started_at: Date.new(2026, 5, 10), canceled_at: nil)
+      create(:subscription, customer: churned,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: Date.new(2026, 5, 20),
+                            status: :canceled)
+
+      w = account_movements_widget
+      assert_equal [ "New accounts", "Churned accounts" ], w[:data].map { |series| series[:name] }
+      assert_equal 1, w[:data][0][:data]["2026-05"]
+      assert_equal 1, w[:data][1][:data]["2026-05"]
+      assert_match(/\Aaccount-movements-/, w[:chart_id])
+      assert w[:library][:plugins][:zoom][:zoom][:wheel][:enabled]
+    end
+  end
+
+  test "active_accounts_widget returns month-end active account counts" do
+    travel_to Date.new(2026, 6, 15) do
+      retained = create(:customer)
+      new_account = create(:customer)
+      churned = create(:customer)
+      create(:subscription, customer: retained,
+                            started_at: Date.new(2026, 1, 1), canceled_at: nil)
+      create(:subscription, customer: new_account,
+                            started_at: Date.new(2026, 5, 10), canceled_at: nil)
+      create(:subscription, customer: churned,
+                            started_at: Date.new(2026, 1, 1),
+                            canceled_at: Date.new(2026, 5, 20),
+                            status: :canceled)
+
+      w = active_accounts_widget
+      assert_equal 2, w[:data]["2026-05"]
+      assert_match(/\Aactive-accounts-/, w[:chart_id])
+      assert w[:library][:plugins][:zoom][:zoom][:wheel][:enabled]
+    end
   end
 
   # --- mrr_movements ------------------------------------------------------

@@ -1,6 +1,6 @@
 module PagesHelper
   # [WIDGET_NAME] or [WIDGET_NAME:argument]. Argument is a snake_case key.
-  WIDGET_RE = /\[([A-Z_]+)(?::([a-z][a-z0-9_]*))?\]/
+  WIDGET_RE = /\[([A-Z][A-Z0-9_]*)(?::([a-z][a-z0-9_]*))?\]/
 
   def render_page_body(page, investor)
     page.body.to_s.gsub(WIDGET_RE) do
@@ -16,6 +16,8 @@ module PagesHelper
       when "CHURNED_CUSTOMERS"  then render(partial: "pages/widgets/churned_customers")
       when "CHURN_REASONS"      then render(partial: "pages/widgets/churn_reasons")
       when "CHURN_RATE"         then render(partial: "pages/widgets/churn_rate")
+      when "ACCOUNT_MOVEMENTS"  then render(partial: "pages/widgets/account_movements")
+      when "ACTIVE_ACCOUNTS"    then render(partial: "pages/widgets/active_accounts")
       when "MRR_WALK"           then render(partial: "pages/widgets/mrr_walk")
       when "NRR_GRR"            then render(partial: "pages/widgets/nrr_grr")
       when "QUICK_RATIO"        then render(partial: "pages/widgets/quick_ratio")
@@ -231,25 +233,72 @@ module PagesHelper
   # (canceled_at IS NULL OR > B). "Churned in month M" means active at the
   # start of M but not at the start of M+1.
   def monthly_churn_rate(months_back: 12)
-    end_month   = Date.current.beginning_of_month
-    start_month = end_month - months_back.months
-    boundaries  = (0..(months_back + 1)).map { |i| start_month + i.months }
+    monthly_account_activity(months_back: months_back).transform_values do |counts|
+      counts[:active_start].zero? ? 0.0 : (counts[:churn].to_f / counts[:active_start] * 100).round(2)
+    end
+  end
+
+  # Monthly logo/account counts derived from Stripe subscription start/cancel
+  # dates. A bucket labeled "2026-05" compares May 1 to June 1:
+  # - active_start: unique customers active at May 1
+  # - active_end: unique customers active at June 1
+  # - new: active at June 1 but not May 1
+  # - churn: active at May 1 but not June 1
+  def monthly_account_activity(months_back: 12)
+    boundaries = account_month_boundaries(months_back)
+    return {} if boundaries.size < 2
 
     subs = Subscription.pluck(:customer_id, :started_at, :canceled_at)
-    active_sets = boundaries.each_with_object({}) do |b, h|
-      h[b] = active_customer_ids_at(subs, b)
+    active_sets = boundaries.each_with_object({}) do |boundary, acc|
+      acc[boundary] = active_customer_ids_at(subs, boundary)
     end
 
-    boundaries.each_cons(2).each_with_object({}) do |(month_start, next_start), acc|
-      bucket = month_start.strftime("%Y-%m")
+    boundaries.each_cons(2).each_with_object({}) do |(month_start, next_month_start), acc|
       start_set = active_sets[month_start]
+      end_set   = active_sets[next_month_start]
 
-      next acc[bucket] = 0.0 if start_set.empty?
-
-      end_set = active_sets[next_start]
-      churned = start_set - end_set
-      acc[bucket] = (churned.size.to_f / start_set.size * 100).round(2)
+      acc[month_start.strftime("%Y-%m")] = {
+        active_start: start_set.size,
+        active_end:   end_set.size,
+        new:          (end_set - start_set).size,
+        churn:        (start_set - end_set).size
+      }
     end
+  end
+
+  def account_movements_widget
+    activity = monthly_account_activity
+    {
+      data: [
+        { name: "New accounts",     data: activity.transform_values { |m| m[:new] } },
+        { name: "Churned accounts", data: activity.transform_values { |m| m[:churn] } }
+      ],
+      chart_id: "account-movements-#{SecureRandom.hex(4)}",
+      colors:   [ "#16a34a", "#dc2626" ],
+      library: {
+        plugins: {
+          legend: { position: "bottom" },
+          zoom:   chart_zoom_options
+        },
+        scales: { y: { ticks: { precision: 0 } } }
+      }
+    }
+  end
+
+  def active_accounts_widget
+    activity = monthly_account_activity
+    {
+      data:     activity.transform_values { |m| m[:active_end] },
+      chart_id: "active-accounts-#{SecureRandom.hex(4)}",
+      colors:   [ "#2563eb" ],
+      library: {
+        plugins: {
+          legend: { display: false },
+          zoom:   chart_zoom_options
+        },
+        scales: { y: { ticks: { precision: 0 } } }
+      }
+    }
   end
 
   # Returns a Set of customer_ids that had at least one active subscription
@@ -366,6 +415,12 @@ module PagesHelper
   def monthly_buckets(months_back)
     end_month = Date.current.beginning_of_month
     (-(months_back)..1).map { |i| end_month + i.months }
+  end
+
+  def account_month_boundaries(months_back)
+    end_month   = Date.current.beginning_of_month
+    start_month = end_month - months_back.months
+    (0..(months_back + 1)).map { |i| start_month + i.months }
   end
 
   # { Date => { customer_id => total_mrr_cents } } for the given months.

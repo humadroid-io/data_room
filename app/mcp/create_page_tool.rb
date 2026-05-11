@@ -3,7 +3,8 @@ class CreatePageTool < ApplicationTool
     Create a new page. Slug must be lowercase a-z0-9 with hyphens (or empty for the
     single root landing page). The body accepts plain HTML and the following widget
     tokens: [CHILD_PAGES], [CHILD_PAGES_2_COL], [CUSTOMER_PIPELINE],
-    [MOMS_GROWTH_CHART], [RETENTION_COHORT].
+    [RETENTION_COHORT], [ACCOUNT_MOVEMENTS], [ACTIVE_ACCOUNTS],
+    [MONTHLY_REVENUE], [CHURN_RATE], [MRR_WALK], [NRR_GRR], [QUICK_RATIO].
 
     Visibility: "draft" (admin only), "public" (every signed-in investor),
     or "private" (only investors listed in allowed_investor_emails).
