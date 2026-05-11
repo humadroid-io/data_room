@@ -165,7 +165,7 @@ GEM
       thor (~> 1.3)
       zeitwerk (>= 2.6.18, < 3.0)
     language_server-protocol (3.17.0.5)
-    lexxy (0.1.26.beta)
+    lexxy (0.9.11.beta)
       rails (>= 8.0.2)
     lint_roller (1.1.0)
     logger (1.7.0)
@@ -424,7 +424,7 @@ DEPENDENCIES
   image_processing (~> 1.2)
   jsbundling-rails
   kamal
-  lexxy (~> 0.1.4.beta)
+  lexxy (>= 0.9.11.beta)
   mcp
   mocha
   propshaft
@@ -504,7 +504,7 @@ CHECKSUMS
   json-schema (6.2.0) sha256=e8bff46ed845a22c1ab2bd0d7eccf831c01fe23bb3920caa4c74db4306813666
   kamal (2.11.0) sha256=1408864425e0dec7e0a14d712a3b13f614e9f3a425b7661d3f9d287a51d7dd75
   language_server-protocol (3.17.0.5) sha256=fd1e39a51a28bf3eec959379985a72e296e9f9acfce46f6a79d31ca8760803cc
-  lexxy (0.1.26.beta) sha256=908b6ab245a1fa80bf28fee3ebbb45af35666ac45b388e1417092f3b0308120b
+  lexxy (0.9.11.beta) sha256=b631adf95d22e778cb764cc7fd8dc0c858dcd03b0fd9ef4e6a58e4e79a34a2d4
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   loofah (2.25.1) sha256=d436c73dbd0c1147b16c4a41db097942d217303e1f7728704b37e4df9f6d2e04
