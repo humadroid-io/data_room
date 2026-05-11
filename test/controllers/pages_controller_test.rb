@@ -17,12 +17,14 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     sign_in_investor(@investor)
     get root_path
     assert_response :success
+    assert_select "ul[aria-label=?] a[href=?]", "Mobile data room navigation", @section.path, text: @section.title
   end
 
   test "GET nested path serves the correct page" do
     sign_in_investor(@investor)
     get "/company/team"
     assert_response :success
+    assert_select "ul[aria-label=?] a[href=?]", "Mobile data room navigation", @child.path, text: @child.title
   end
 
   test "GET trailing slash normalizes" do

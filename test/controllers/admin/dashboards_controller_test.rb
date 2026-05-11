@@ -8,6 +8,7 @@ class Admin::DashboardsControllerTest < ActionDispatch::IntegrationTest
   test "GET /admin renders" do
     get admin_root_path
     assert_response :success
+    assert_select "ul[aria-label=?] a[href=?]", "Mobile admin navigation", admin_pages_path, text: "Pages"
   end
 
   test "GET /admin/dashboard renders" do

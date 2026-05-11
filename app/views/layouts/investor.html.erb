@@ -12,13 +12,13 @@
     <% if admin_signed_in? && investor_signed_in? %>
       <%# Impersonation mode — admin is "wearing" an investor identity %>
       <div class="bg-warning/15 border-b border-warning/30 text-xs">
-        <div class="max-w-6xl mx-auto px-6 h-9 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2 min-h-9 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <span>
             Viewing as <strong><%= current_investor.name %></strong>
             <% if current_investor.fund_name.present? %>(<%= current_investor.fund_name %>)<% end %>
             — admin impersonation.
           </span>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <%= link_to "Edit page", edit_admin_page_path(@page), class: "btn btn-ghost btn-xs" if @page %>
             <%= button_to "Stop viewing", admin_impersonation_path(current_investor),
                   method: :delete,
@@ -30,14 +30,14 @@
     <% elsif admin_signed_in? %>
       <%# Direct admin browsing — full edit toolbar %>
       <div class="bg-base-200 border-b border-base-300 text-xs">
-        <div class="max-w-6xl mx-auto px-6 h-9 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2 min-h-9 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-3">
             <span class="text-base-content/60">Admin · <%= current_admin.email %></span>
             <% if @page %>
               <%= page_visibility_badge(@page) %>
             <% end %>
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex flex-wrap items-center gap-1">
             <%= link_to "Dashboard", admin_root_path, class: "btn btn-ghost btn-xs" %>
             <% if @page %>
               <%= link_to "Edit page", edit_admin_page_path(@page), class: "btn btn-ghost btn-xs" %>
@@ -72,13 +72,46 @@
     <% end %>
 
     <header class="border-b border-base-300 bg-base-100/80 backdrop-blur sticky top-0 z-30">
-      <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <%= link_to root_path, class: "flex items-center gap-2 font-semibold tracking-tight text-sm" do %>
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-content text-xs">DR</span>
           <span>Data Room</span>
         <% end %>
 
-        <div class="flex items-center gap-4 text-sm text-base-content/70">
+        <div class="flex items-center gap-2 text-sm text-base-content/70">
+          <details class="dropdown dropdown-end md:hidden">
+            <summary class="btn btn-ghost btn-sm">Menu</summary>
+            <ul aria-label="Mobile data room navigation"
+                class="dropdown-content menu bg-base-100 border border-base-300 rounded-md w-72 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto p-2 mt-2 z-40 shadow-sm">
+              <% landing = Page.landing %>
+              <% if landing %>
+                <li>
+                  <%= link_to "Overview", root_path,
+                        class: "#{'active font-medium' if @page&.id == landing.id}" %>
+                </li>
+              <% end %>
+              <% (@sidebar || []).each do |section| %>
+                <% next if investor_signed_in? && !section.visible_to?(current_investor) %>
+                <li>
+                  <%= link_to section.title, section.path,
+                        class: "#{'active font-medium' if @page&.path&.start_with?(section.path)} #{'opacity-60 italic' if section.visibility_draft?}" %>
+                  <% if @page&.path&.start_with?(section.path) %>
+                    <% scope = viewing_as_admin? ? section.children.order(:sort_order) : section.visible_children_for(current_investor) %>
+                    <% if scope.any? %>
+                      <ul>
+                        <% scope.each do |child| %>
+                          <li>
+                            <%= link_to child.title, child.path,
+                                  class: "#{'active font-medium' if @page&.id == child.id} #{'opacity-60 italic' if child.visibility_draft?}" %>
+                          </li>
+                        <% end %>
+                      </ul>
+                    <% end %>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </details>
           <% if investor_signed_in? %>
             <span class="hidden sm:inline"><%= current_investor.name %></span>
             <%= button_to "Sign out", logout_path, method: :delete,
@@ -89,7 +122,7 @@
       </div>
     </header>
 
-    <div class="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-8">
       <aside class="hidden md:block">
         <nav class="text-sm sticky top-20">
           <% landing = Page.landing %>
