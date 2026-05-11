@@ -1,5 +1,8 @@
 <% content_for :title, "Dashboard" %>
 <% content_for :page_title, "Dashboard" %>
+<% content_for :page_header do %>
+  <%= link_to "Visit data room", root_path, class: "btn btn-primary btn-sm" %>
+<% end %>
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
   <div class="card bg-base-100 border border-base-300">
@@ -117,7 +120,12 @@
             <tr>
               <td class="text-base-content/60 whitespace-nowrap"><%= page_view_row_time(v.viewed_at) %></td>
               <td><%= v.investor.name %></td>
-              <td><%= link_to v.page.path, admin_page_path(v.page), class: "underline" %></td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <%= link_to v.page.path, admin_page_path(v.page), class: "underline" %>
+                  <%= link_to "Public", v.page.path, class: "btn btn-ghost btn-xs" %>
+                </div>
+              </td>
             </tr>
           <% end %>
         </tbody>

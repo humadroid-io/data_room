@@ -19,10 +19,16 @@
       <tbody>
         <% @pages.each do |page| %>
           <tr>
-            <td><code class="text-xs"><%= page.path %></code></td>
-            <td><%= page.title %></td>
+            <td>
+              <%= link_to admin_page_path(page), class: "underline" do %>
+                <code class="text-xs"><%= page.path %></code>
+              <% end %>
+            </td>
+            <td><%= link_to page.title, admin_page_path(page), class: "underline" %></td>
             <td><%= page_visibility_badge(page) %></td>
             <td class="text-right whitespace-nowrap">
+              <%= link_to "View", admin_page_path(page), class: "btn btn-ghost btn-xs" %>
+              <%= link_to "Public", page.path, class: "btn btn-ghost btn-xs" %>
               <%= link_to "Edit", edit_admin_page_path(page), class: "btn btn-ghost btn-xs" %>
               <%= button_to "Delete", admin_page_path(page), method: :delete,
                     form: { class: "inline", data: { turbo_confirm: "Delete page #{page.path}?" } },

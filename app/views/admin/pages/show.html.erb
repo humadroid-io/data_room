@@ -2,6 +2,7 @@
 <% content_for :page_title, @page.title %>
 <% content_for :page_subtitle do %><%= @page.path %> · <%= page_visibility_badge(@page) %><% end %>
 <% content_for :page_header do %>
+  <%= link_to "Public version", @page.path, class: "btn btn-ghost btn-sm" %>
   <% investors = Investor.usable.order(:name) %>
   <% if investors.any? %>
     <details class="dropdown dropdown-end">

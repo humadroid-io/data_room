@@ -15,6 +15,11 @@ class Admin::DashboardsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "show includes a clear link to the public data room" do
+    get admin_root_path
+    assert_select "a[href=?]", root_path, text: "Visit data room"
+  end
+
   test "show requires admin sign-in" do
     delete admin_logout_path
     get admin_root_path
@@ -68,6 +73,7 @@ class Admin::DashboardsControllerTest < ActionDispatch::IntegrationTest
     get admin_root_path
     assert_match "Investor One", response.body
     assert_match "/specific-page", response.body
+    assert_select "a[href=?]", page.path, text: "Public"
   end
 
   test "show caps the recent-views list at 10 rows" do

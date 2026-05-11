@@ -10,9 +10,18 @@ class Admin::PagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "GET index" do
-    create(:section_page, slug: "p")
+    page = create(:section_page, slug: "p")
     get admin_pages_path
     assert_response :success
+    assert_select "a[href=?]", admin_page_path(page), text: "View"
+    assert_select "a[href=?]", page.path, text: "Public"
+  end
+
+  test "GET show links to the public page version" do
+    page = create(:section_page, slug: "p")
+    get admin_page_path(page)
+    assert_response :success
+    assert_select "a[href=?]", page.path, text: "Public version"
   end
 
   test "GET new" do
