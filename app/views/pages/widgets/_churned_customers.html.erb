@@ -6,25 +6,25 @@
       <table class="table table-sm">
         <thead class="text-xs uppercase tracking-wide text-base-content/60">
           <tr>
-            <th>Churned</th>
-            <th>Customer</th>
-            <th>Reason</th>
-            <th>Notes</th>
+            <th class="!py-2.5 !px-3">Churned</th>
+            <th class="!py-2.5 !px-3">Customer</th>
+            <th class="!py-2.5 !px-3">Reason</th>
+            <th class="!py-2.5 !px-3">Notes</th>
           </tr>
         </thead>
         <tbody>
           <% rows.each do |row| %>
             <tr>
-              <td class="whitespace-nowrap text-base-content/70"><%= row[:churned_on].to_fs(:long) %></td>
-              <td class="font-medium"><%= row[:label] %></td>
-              <td>
+              <td class="whitespace-nowrap text-base-content/70 !py-2.5 !px-3"><%= row[:churned_on].to_fs(:long) %></td>
+              <td class="font-medium !py-2.5 !px-3"><%= row[:label] %></td>
+              <td class="!py-2.5 !px-3">
                 <% if row[:category_text] %>
                   <span class="badge badge-soft badge-sm"><%= row[:category_text] %></span>
                 <% else %>
                   <span class="text-base-content/40">—</span>
                 <% end %>
               </td>
-              <td class="text-sm text-base-content/70"><%= row[:notes] %></td>
+              <td class="text-sm text-base-content/70 !py-2.5 !px-3"><%= row[:notes] %></td>
             </tr>
           <% end %>
         </tbody>

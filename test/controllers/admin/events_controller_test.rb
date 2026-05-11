@@ -3,6 +3,24 @@ require "test_helper"
 class Admin::EventsControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in_admin }
 
+  test "GET show renders event details" do
+    event = create(:event, title: "Series A", kind: :funding,
+                            occurred_on: Date.new(2026, 4, 15),
+                            description: "Closed $5M lead by VastFund.")
+    get admin_event_path(event)
+    assert_response :success
+    assert_match "Series A",       response.body
+    assert_match "VastFund",        response.body
+    assert_match event.month_bucket, response.body
+  end
+
+  test "GET show requires admin sign-in" do
+    event = create(:event)
+    delete admin_logout_path
+    get admin_event_path(event)
+    assert_redirected_to admin_login_path
+  end
+
   test "GET index lists events most-recent first" do
     older = create(:event, occurred_on: Date.new(2025, 12, 1), title: "Old")
     newer = create(:event, occurred_on: Date.new(2026, 5, 1),  title: "New")

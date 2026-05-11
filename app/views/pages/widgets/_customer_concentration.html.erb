@@ -6,22 +6,22 @@
       <table class="table table-sm">
         <thead class="text-xs uppercase tracking-wide text-base-content/60">
           <tr>
-            <th>Customer</th>
-            <th class="text-right">MRR</th>
-            <th class="text-right">% of total</th>
-            <th class="w-1/3">Share</th>
+            <th class="!py-2.5 !px-3">Customer</th>
+            <th class="text-right !py-2.5 !px-3">MRR</th>
+            <th class="text-right !py-2.5 !px-3">% of total</th>
+            <th class="w-1/3 !py-2.5 !px-3">Share</th>
           </tr>
         </thead>
         <tbody>
           <% w[:rows].each do |row| %>
             <% over_threshold = row[:percentage] >= 25 %>
             <tr>
-              <td class="font-medium"><%= row[:label] %></td>
-              <td class="text-right tabular-nums">$<%= number_with_delimiter(row[:dollars]) %></td>
-              <td class="text-right tabular-nums <%= 'text-error font-medium' if over_threshold %>">
-                <%= row[:percentage] %>%
+              <td class="font-medium !py-2.5 !px-3"><%= row[:label] %></td>
+              <td class="text-right tabular-nums !py-2.5 !px-3">$<%= number_with_delimiter(row[:dollars]) %></td>
+              <td class="text-right tabular-nums <%= 'text-error font-medium' if over_threshold %> !py-2.5 !px-3">
+                <%= row[:percentage] %>
               </td>
-              <td>
+              <td class="!py-2.5 !px-3">
                 <div class="h-2 bg-base-200 rounded">
                   <div class="h-2 rounded <%= over_threshold ? 'bg-error' : 'bg-base-content/60' %>"
                        style="width: <%= row[:percentage].clamp(0, 100) %>%"></div>

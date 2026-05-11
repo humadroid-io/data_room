@@ -1,0 +1,116 @@
+<% content_for :title, "Subscription · #{@subscription.customer.name}" %>
+<% content_for :page_title, @subscription.display_product %>
+<% content_for :page_subtitle do %>
+  <%= link_to @subscription.customer.name, admin_customer_path(@subscription.customer), class: "underline" %>
+  · <%= @subscription.status.titleize %>
+  · <%= usd_money(@subscription.mrr_cents_usd) %>/mo
+<% end %>
+<% content_for :page_header do %>
+  <%= link_to "Edit", edit_admin_subscription_path(@subscription), class: "btn btn-primary btn-sm" %>
+  <%= button_to "Delete", admin_subscription_path(@subscription), method: :delete,
+        form: { class: "inline", data: { turbo_confirm: "Delete subscription?" } },
+        class: "btn btn-ghost btn-sm text-error" %>
+<% end %>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="card bg-base-100 border border-base-300 p-6 md:col-span-2 space-y-4">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Details</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Status</dt>
+        <dd class="mt-1"><span class="badge badge-soft badge-sm"><%= @subscription.status.titleize %></span></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">MRR (USD)</dt>
+        <dd class="mt-1 tabular-nums"><%= usd_money(@subscription.mrr_cents_usd) %>/mo</dd>
+      </div>
+      <% if @subscription.currency.to_s.downcase != "usd" %>
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-base-content/50">Native amount</dt>
+          <dd class="mt-1 tabular-nums text-base-content/60">
+            <%= format_money(@subscription.mrr_cents, @subscription.currency) %>/mo
+            <span class="text-xs"><%= @subscription.currency.upcase %></span>
+          </dd>
+        </div>
+      <% end %>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Stripe price</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @subscription.stripe_price_id || "—" %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Product code</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @subscription.product_code || "—" %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Stripe subscription ID</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @subscription.stripe_subscription_id %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Stripe customer ID</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @subscription.stripe_customer_id %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Started</dt>
+        <dd class="mt-1"><%= @subscription.started_at&.to_date || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Canceled</dt>
+        <dd class="mt-1"><%= @subscription.canceled_at&.to_date || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Paused</dt>
+        <dd class="mt-1"><%= @subscription.paused_at&.to_date || "—" %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Last synced</dt>
+        <dd class="mt-1 text-base-content/60"><%= @subscription.last_synced_at ? "#{time_ago_in_words(@subscription.last_synced_at)} ago" : "—" %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300 p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Totals</h2>
+    <div class="text-2xl font-semibold tabular-nums"><%= usd_money(@total_paid) %></div>
+    <div class="text-xs text-base-content/60">across <%= @payments.size %> recent payment<%= "s" unless @payments.size == 1 %></div>
+  </div>
+</div>
+
+<section class="card bg-base-100 border border-base-300 p-6 mt-6">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Recent payments</h2>
+  <% if @payments.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr><th>Paid at</th><th class="text-right">Amount</th><th>Invoice</th></tr>
+      </thead>
+      <tbody>
+        <% @payments.each do |p| %>
+          <tr>
+            <td class="whitespace-nowrap"><%= p.paid_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="text-right tabular-nums"><%= payment_amount(p) %></td>
+            <td><%= link_to p.stripe_invoice_id, admin_payment_path(p), class: "underline text-xs" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-base-content/60">No payments imported for this subscription yet.</p>
+  <% end %>
+</section>
+
+<% if @snapshot_runs.any? %>
+  <section class="card bg-base-100 border border-base-300 p-6 mt-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Monthly snapshots</h2>
+    <table class="table table-sm">
+      <thead><tr><th>Date</th><th class="text-right">MRR</th><th>Status</th></tr></thead>
+      <tbody>
+        <% @snapshot_runs.each do |s| %>
+          <tr>
+            <td><%= s.snapshot_date %></td>
+            <td class="text-right tabular-nums"><%= usd_money(s.mrr_cents_usd) %></td>
+            <td><span class="badge badge-soft badge-xs"><%= s.status.titleize %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% end %>

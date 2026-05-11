@@ -31,6 +31,8 @@
     </div>
     <p class="mt-2 text-xs text-base-content/50">
       Logo churn = customers churned this month ÷ customers active at month start.
+      Derived from Stripe subscription start / cancel dates, so historical months
+      reflect actual cancellations even for customers imported later.
     </p>
   <% else %>
     <p class="text-sm text-base-content/60">No churn recorded in the trailing 12 months.</p>

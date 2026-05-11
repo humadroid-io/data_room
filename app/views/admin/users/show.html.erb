@@ -1,0 +1,67 @@
+<% content_for :title, @user.name %>
+<% content_for :page_title, @user.name %>
+<% content_for :page_subtitle, @user.email %>
+<% content_for :page_header do %>
+  <%= link_to "Edit", edit_admin_user_path(@user), class: "btn btn-primary btn-sm" %>
+  <% unless @user == current_admin || (@user.admin? && User.admin.count <= 1) %>
+    <%= button_to "Delete", admin_user_path(@user), method: :delete,
+          form: { class: "inline", data: { turbo_confirm: "Delete #{@user.email}?" } },
+          class: "btn btn-ghost btn-sm text-error" %>
+  <% end %>
+<% end %>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="card bg-base-100 border border-base-300 p-6 md:col-span-2 space-y-4">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Profile</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Role</dt>
+        <dd class="mt-1">
+          <% if @user.admin? %>
+            <span class="badge badge-soft badge-info badge-sm">Admin</span>
+          <% else %>
+            <span class="badge badge-soft badge-sm">Viewer</span>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Email</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @user.email %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Created</dt>
+        <dd class="mt-1"><%= @user.created_at.to_date %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Last updated</dt>
+        <dd class="mt-1 text-base-content/60"><%= time_ago_in_words(@user.updated_at) %> ago</dd>
+      </div>
+    </dl>
+
+    <% if @user == current_admin %>
+      <p class="text-xs text-base-content/50 pt-2 border-t border-base-300">
+        This is your own account.
+      </p>
+    <% end %>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300 p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">MCP token</h2>
+      <%= button_to (@user.api_token.present? ? "Regenerate" : "Generate"),
+            regenerate_api_token_admin_user_path(@user),
+            method: :post,
+            form: { class: "inline",
+                    data: { turbo_confirm: @user.api_token.present? ? "Rotate token? The old one stops working immediately." : nil } },
+            class: "btn btn-ghost btn-xs" %>
+    </div>
+    <% if @user.api_token.present? %>
+      <div class="font-mono text-xs bg-base-200 p-2 rounded break-all select-all"><%= @user.api_token %></div>
+      <p class="text-xs text-base-content/50 mt-2">
+        This token authenticates this user against the MCP server.
+      </p>
+    <% else %>
+      <p class="text-sm text-base-content/60">No token issued.</p>
+    <% end %>
+  </div>
+</div>

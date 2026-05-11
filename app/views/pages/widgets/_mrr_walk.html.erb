@@ -23,7 +23,8 @@
     </div>
     <p class="mt-2 text-xs text-base-content/50">
       MRR added (new + expansion) above zero, MRR lost (contraction + churn) below.
-      Read the bar height for net new MRR each month.
+      Each customer's monthly value is derived from their latest Stripe payment ÷ billing
+      interval, so coupons and discounts are reflected — these bars are real cash, not list price.
     </p>
   <% else %>
     <p class="text-sm text-base-content/60">

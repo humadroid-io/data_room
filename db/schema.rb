@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_11_100001) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -157,6 +157,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
 
   create_table "payments", force: :cascade do |t|
     t.integer "amount_cents", null: false
+    t.integer "amount_cents_usd", default: 0, null: false
     t.datetime "created_at", null: false
     t.string "currency", default: "usd", null: false
     t.integer "customer_id", null: false
@@ -165,6 +166,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
     t.string "stripe_invoice_id", null: false
     t.integer "subscription_id"
     t.datetime "updated_at", null: false
+    t.index ["amount_cents_usd"], name: "index_payments_on_amount_cents_usd"
     t.index ["customer_id"], name: "index_payments_on_customer_id"
     t.index ["paid_at"], name: "index_payments_on_paid_at"
     t.index ["stripe_invoice_id"], name: "index_payments_on_stripe_invoice_id", unique: true
@@ -175,10 +177,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
     t.json "captured_attributes", default: {}
     t.datetime "created_at", null: false
     t.integer "mrr_cents", null: false
+    t.integer "mrr_cents_usd", default: 0, null: false
     t.date "snapshot_date", null: false
     t.integer "status", null: false
     t.integer "subscription_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["mrr_cents_usd"], name: "index_snapshots_on_mrr_cents_usd"
     t.index ["snapshot_date"], name: "index_snapshots_on_snapshot_date"
     t.index ["subscription_id", "snapshot_date"], name: "index_snapshots_on_subscription_id_and_snapshot_date", unique: true
     t.index ["subscription_id"], name: "index_snapshots_on_subscription_id"
@@ -190,8 +194,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
     t.string "currency", default: "usd", null: false
     t.json "custom_attributes", default: {}
     t.integer "customer_id", null: false
+    t.integer "interval_months", default: 1, null: false
     t.datetime "last_synced_at"
     t.integer "mrr_cents", default: 0, null: false
+    t.integer "mrr_cents_usd", default: 0, null: false
     t.datetime "paused_at"
     t.string "product_code"
     t.datetime "started_at"
@@ -201,6 +207,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_10_200001) do
     t.string "stripe_subscription_id", null: false
     t.datetime "updated_at", null: false
     t.index ["customer_id"], name: "index_subscriptions_on_customer_id"
+    t.index ["mrr_cents_usd"], name: "index_subscriptions_on_mrr_cents_usd"
     t.index ["status", "product_code"], name: "index_subscriptions_on_status_and_product_code"
     t.index ["stripe_customer_id"], name: "index_subscriptions_on_stripe_customer_id"
     t.index ["stripe_price_id"], name: "index_subscriptions_on_stripe_price_id"

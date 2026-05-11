@@ -1,0 +1,74 @@
+<% content_for :title, @definition.label %>
+<% content_for :page_title, @definition.label %>
+<% content_for :page_subtitle do %>
+  <%= @definition.resource_type %> · <code class="text-xs"><%= @definition.key %></code>
+<% end %>
+<% content_for :page_header do %>
+  <%= link_to "Edit", edit_admin_attribute_definition_path(@definition), class: "btn btn-primary btn-sm" %>
+  <%= button_to "Delete", admin_attribute_definition_path(@definition), method: :delete,
+        form: { class: "inline", data: { turbo_confirm: "Delete attribute? Existing values stay in customers' JSON but no longer render in forms." } },
+        class: "btn btn-ghost btn-sm text-error" %>
+<% end %>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="card bg-base-100 border border-base-300 p-6 md:col-span-2 space-y-4">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Schema</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Resource</dt>
+        <dd class="mt-1"><%= @definition.resource_type %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Data type</dt>
+        <dd class="mt-1"><span class="badge badge-soft badge-sm"><%= @definition.data_type %></span></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Key</dt>
+        <dd class="mt-1"><code class="text-xs"><%= @definition.key %></code></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Sort order</dt>
+        <dd class="mt-1"><%= @definition.sort_order %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Required</dt>
+        <dd class="mt-1"><%= @definition.required? ? "Yes" : "No" %></dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-base-content/50">Capture on snapshot</dt>
+        <dd class="mt-1"><%= @definition.capture_on_snapshot? ? "Yes" : "No" %></dd>
+      </div>
+    </dl>
+
+    <% if @definition.description.present? %>
+      <div class="pt-4 border-t border-base-300">
+        <dt class="text-xs uppercase tracking-wide text-base-content/50 mb-1">Description</dt>
+        <dd class="text-sm whitespace-pre-wrap"><%= @definition.description %></dd>
+      </div>
+    <% end %>
+
+    <% if @definition.select_type? && @definition.options.present? %>
+      <div class="pt-4 border-t border-base-300">
+        <dt class="text-xs uppercase tracking-wide text-base-content/50 mb-2">Options</dt>
+        <dd>
+          <ul class="space-y-1">
+            <% @definition.options.each do |opt| %>
+              <li class="flex items-center gap-2 text-sm">
+                <span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %> badge-sm"><%= opt["label"] %></span>
+                <code class="text-xs text-base-content/60"><%= opt["value"] %></code>
+              </li>
+            <% end %>
+          </ul>
+        </dd>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @resource_count %>
+    <div class="card bg-base-100 border border-base-300 p-6">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60 mb-3">Usage</h2>
+      <div class="text-2xl font-semibold tabular-nums"><%= @usage_count %></div>
+      <div class="text-xs text-base-content/60">of <%= @resource_count %> <%= @definition.resource_type.tableize.titleize.downcase %> have a value</div>
+    </div>
+  <% end %>
+</div>

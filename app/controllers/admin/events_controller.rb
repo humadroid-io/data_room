@@ -1,9 +1,11 @@
 class Admin::EventsController < Admin::BaseController
-  before_action :set_event, only: %i[edit update destroy]
+  before_action :set_event, only: %i[show edit update destroy]
 
   def index
     @events = Event.order(occurred_on: :desc)
   end
+
+  def show; end
 
   def new
     @event = Event.new(occurred_on: Date.current)

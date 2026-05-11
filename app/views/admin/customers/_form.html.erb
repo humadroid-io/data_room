@@ -72,7 +72,10 @@
 
   <div class="card bg-base-100 border border-base-300 p-6 space-y-4">
     <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Churn</h2>
-    <p class="text-xs text-base-content/50">Leave the date blank for active customers.</p>
+    <p class="text-xs text-base-content/50">
+      Leave the date blank for active customers. <strong>Auto-set</strong> when every Stripe
+      subscription is canceled — a manual value won't be overwritten by sync.
+    </p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>

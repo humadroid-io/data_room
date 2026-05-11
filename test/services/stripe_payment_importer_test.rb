@@ -43,6 +43,40 @@ class StripePaymentImporterTest < ActiveSupport::TestCase
     assert_equal sub, Payment.find_by!(stripe_invoice_id: "in_2").subscription
   end
 
+  test "links payment via invoice.lines.data[].subscription (newer Stripe API)" do
+    sub = create(:subscription, customer: @customer, stripe_subscription_id: "sub_via_lines")
+    invoice = OpenStruct.new(
+      id: "in_lines", customer: "cus_abc", amount_paid: 1_000, currency: "usd",
+      subscription: nil,
+      lines: OpenStruct.new(data: [
+        OpenStruct.new(subscription: OpenStruct.new(id: "sub_via_lines"))
+      ]),
+      status_transitions: OpenStruct.new(paid_at: 1.hour.ago.to_i)
+    )
+    invoices = mock("list")
+    invoices.stubs(:auto_paging_each).multiple_yields(invoice)
+    Stripe::Invoice.stubs(:list).returns(invoices)
+
+    StripePaymentImporter.run
+    assert_equal sub, Payment.find_by!(stripe_invoice_id: "in_lines").subscription
+  end
+
+  test "links payment via invoice.subscription_details.subscription" do
+    sub = create(:subscription, customer: @customer, stripe_subscription_id: "sub_via_details")
+    invoice = OpenStruct.new(
+      id: "in_details", customer: "cus_abc", amount_paid: 1_000, currency: "usd",
+      subscription: nil,
+      subscription_details: OpenStruct.new(subscription: "sub_via_details"),
+      status_transitions: OpenStruct.new(paid_at: 1.hour.ago.to_i)
+    )
+    invoices = mock("list")
+    invoices.stubs(:auto_paging_each).multiple_yields(invoice)
+    Stripe::Invoice.stubs(:list).returns(invoices)
+
+    StripePaymentImporter.run
+    assert_equal sub, Payment.find_by!(stripe_invoice_id: "in_details").subscription
+  end
+
   test "leaves subscription nil when invoice has no subscription" do
     invoices = mock("list")
     invoices.stubs(:auto_paging_each).multiple_yields(

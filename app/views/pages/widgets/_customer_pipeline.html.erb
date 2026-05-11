@@ -15,23 +15,23 @@
       <table class="table table-sm">
         <thead class="text-xs uppercase tracking-wide text-base-content/60">
           <tr>
-            <th><%= defn.label %></th>
-            <th class="text-right">Customers</th>
+            <th class="!py-2.5 !px-3"><%= defn.label %></th>
+            <th class="text-right !py-2.5 !px-3">Customers</th>
           </tr>
         </thead>
         <tbody>
           <% (defn.options || []).each do |opt| %>
             <% rows = (groups[opt["value"]] || []) %>
             <tr>
-              <td><span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %>"><%= opt["label"] %></span></td>
-              <td class="text-right tabular-nums"><%= rows.size %></td>
+              <td class="!py-2.5 !px-3"><span class="badge badge-soft badge-<%= opt['color'] || 'neutral' %>"><%= opt["label"] %></span></td>
+              <td class="text-right tabular-nums !py-2.5 !px-3"><%= rows.size %></td>
             </tr>
           <% end %>
           <% unset = groups[nil] || [] %>
           <% if unset.any? %>
             <tr>
-              <td><span class="text-base-content/60 text-sm">— unset —</span></td>
-              <td class="text-right tabular-nums text-base-content/60"><%= unset.size %></td>
+              <td class="!py-2.5 !px-3"><span class="text-base-content/60 text-sm">— unset —</span></td>
+              <td class="text-right tabular-nums text-base-content/60 !py-2.5 !px-3"><%= unset.size %></td>
             </tr>
           <% end %>
         </tbody>

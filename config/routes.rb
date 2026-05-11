@@ -36,8 +36,8 @@ Rails.application.routes.draw do
     end
     resources :attribute_definitions
     resources :page_views, only: [ :index ]
-    resources :payments,   only: [ :index ]
-    resources :events,     except: [ :show ]
+    resources :payments,   only: [ :index, :show ]
+    resources :events
 
     resources :impersonations, only: [ :create, :destroy ]
   end

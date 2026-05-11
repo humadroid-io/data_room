@@ -7,7 +7,7 @@ class StripePaymentImporter
     return 0 unless StripeConfig.configured?
 
     count = 0
-    Stripe::Invoice.list(status: "paid", limit: 100, expand: [ "data.subscription" ])
+    Stripe::Invoice.list(status: "paid", limit: 100, expand: [ "data.subscription", "data.lines.data" ])
                    .auto_paging_each do |invoice|
       count += 1 if upsert(invoice)
     end
@@ -37,10 +37,40 @@ class StripePaymentImporter
     new_record
   end
 
+  # Walks every place Stripe might expose the originating subscription:
+  #   1. invoice.subscription (older API, top-level reference)
+  #   2. invoice.lines.data[*].subscription (newer API; line-level)
+  #   3. invoice.subscription_details.subscription (current API on some shapes)
+  # Returns the first matching local Subscription, or nil.
   def resolve_subscription(invoice)
-    sub = invoice.respond_to?(:subscription) ? invoice.subscription : nil
-    sub_id = sub.is_a?(String) ? sub : sub&.id
-    sub_id && Subscription.find_by(stripe_subscription_id: sub_id)
+    candidate_ids = []
+
+    if invoice.respond_to?(:subscription)
+      candidate_ids << id_from(invoice.subscription)
+    end
+
+    if invoice.respond_to?(:subscription_details)
+      details = invoice.subscription_details
+      candidate_ids << id_from(details.respond_to?(:subscription) ? details.subscription : nil)
+    end
+
+    if invoice.respond_to?(:lines)
+      lines = invoice.lines.respond_to?(:data) ? invoice.lines.data : invoice.lines
+      Array(lines).each do |line|
+        candidate_ids << id_from(line.respond_to?(:subscription) ? line.subscription : nil)
+      end
+    end
+
+    candidate_ids.compact.uniq.each do |stripe_sub_id|
+      found = Subscription.find_by(stripe_subscription_id: stripe_sub_id)
+      return found if found
+    end
+    nil
+  end
+
+  def id_from(reference)
+    return nil if reference.nil?
+    reference.is_a?(String) ? reference : (reference.respond_to?(:id) ? reference.id : nil)
   end
 
   def paid_at_for(invoice)

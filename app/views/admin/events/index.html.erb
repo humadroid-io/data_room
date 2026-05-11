@@ -22,7 +22,7 @@
           <tr>
             <td class="whitespace-nowrap"><%= e.occurred_on.to_fs(:long) %></td>
             <td><%= event_kind_badge(e) %></td>
-            <td class="font-medium"><%= e.title %></td>
+            <td class="font-medium"><%= link_to e.title, admin_event_path(e), class: "underline" %></td>
             <td class="text-sm text-base-content/60"><%= truncate(e.description, length: 80) %></td>
             <td class="text-right whitespace-nowrap">
               <%= link_to "Edit", edit_admin_event_path(e), class: "btn btn-ghost btn-xs" %>

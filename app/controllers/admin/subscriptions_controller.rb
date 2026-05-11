@@ -1,8 +1,14 @@
 class Admin::SubscriptionsController < Admin::BaseController
-  before_action :set_subscription, only: %i[edit update destroy]
+  before_action :set_subscription, only: %i[show edit update destroy]
 
   def index
     @subscriptions = Subscription.includes(:customer).order(created_at: :desc)
+  end
+
+  def show
+    @payments      = @subscription.payments.order(paid_at: :desc).limit(20)
+    @total_paid    = @subscription.payments.sum(:amount_cents_usd)
+    @snapshot_runs = @subscription.snapshots.order(snapshot_date: :desc).limit(12)
   end
 
   def new

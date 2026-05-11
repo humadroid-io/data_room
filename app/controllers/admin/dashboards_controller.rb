@@ -4,7 +4,7 @@ class Admin::DashboardsController < Admin::BaseController
     @live_pages       = Page.live.count
     @investor_count   = Investor.usable.count
     @customer_count   = Customer.count
-    @active_mrr_cents = Subscription.active_now.sum(:mrr_cents)
+    @active_mrr_cents = Subscription.active_now.sum(:mrr_cents_usd)
     @recent_views     = PageView.order(viewed_at: :desc).includes(:investor, :page).limit(10)
 
     @stripe = {

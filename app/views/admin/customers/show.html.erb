@@ -2,14 +2,24 @@
 <% content_for :page_title, @customer.name %>
 <% content_for :page_subtitle, @customer.anonymized_label %>
 <% content_for :page_header do %>
-  <%= link_to "Edit", edit_admin_customer_path(@customer), class: "btn btn-primary btn-sm" %>
-  <%= button_to "Delete", admin_customer_path(@customer), method: :delete,
-        form: { data: { turbo_confirm: "Delete #{@customer.name}?" } },
-        class: "btn btn-ghost btn-sm text-error" %>
+  <%= link_to "Edit",
+  edit_admin_customer_path(@customer),
+  class: "btn btn-primary btn-sm" %>
+  <%= button_to "Delete",
+  admin_customer_path(@customer),
+  method: :delete,
+  form: {
+    data: {
+      turbo_confirm: "Delete #{@customer.name}?",
+    },
+  },
+  class: "btn btn-ghost btn-sm text-error" %>
 <% end %>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-  <div class="card bg-base-100 border border-base-300 p-6 md:col-span-2 space-y-4">
+  <div
+    class="card bg-base-100 border border-base-300 p-6 md:col-span-2 space-y-4"
+  >
     <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Attributes</h2>
     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
       <% AttributeDefinition.for_resource(Customer).each do |defn| %>
@@ -28,15 +38,24 @@
     <% end %>
   </div>
 
-<div class="card bg-base-100 border border-base-300 p-6 space-y-3">
+  <div class="card bg-base-100 border border-base-300 p-6 space-y-3">
     <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Subscriptions</h2>
     <% if @customer.subscriptions.any? %>
       <ul class="space-y-2 text-sm">
         <% @customer.subscriptions.order(started_at: :desc).each do |s| %>
-          <li class="flex items-center justify-between border border-base-300 rounded p-2">
-            <div>
+          <li
+            class="
+              flex items-center justify-between border border-base-300 rounded p-2
+            "
+          >
+            <div class="relative">
+              <%= link_to admin_subscription_path(s) do %>
+                <span class="inset-0 absolute"></span>
+              <% end %>
               <div class="font-medium"><%= s.display_product %></div>
-              <div class="text-xs text-base-content/60"><%= s.status.titleize %> — <%= format_money(s.mrr_cents, s.currency) %>/mo</div>
+              <div class="text-xs text-base-content/60"><%= s.status.titleize %>
+                —
+                <%= usd_money(s.mrr_cents_usd) %>/mo</div>
             </div>
             <%= link_to "Edit", edit_admin_subscription_path(s), class: "btn btn-ghost btn-xs" %>
           </li>
@@ -45,20 +64,27 @@
     <% else %>
       <p class="text-sm text-base-content/60">No subscriptions linked.</p>
     <% end %>
-    <%= link_to "Add subscription", new_admin_subscription_path(customer_id: @customer.id),
-          class: "btn btn-ghost btn-sm w-full" %>
+    <%= link_to "Add subscription",
+    new_admin_subscription_path(customer_id: @customer.id),
+    class: "btn btn-ghost btn-sm w-full" %>
 
     <div class="pt-3 border-t border-base-300">
       <div class="flex items-baseline justify-between mb-2">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">Payments</h2>
         <span class="text-xs text-base-content/60">
-          <%= @total_payments_count %> · <%= format_money(@total_paid_cents, "usd") %>
+          <%= @total_payments_count %>
+          ·
+          <%= usd_money(@total_paid_cents) %>
         </span>
       </div>
       <% if @recent_payments.any? %>
         <ul class="space-y-1 text-sm max-h-72 overflow-y-auto">
           <% @recent_payments.each do |p| %>
-            <li class="flex items-center justify-between border border-base-300 rounded p-2">
+            <li
+              class="
+                flex items-center justify-between border border-base-300 rounded p-2
+              "
+            >
               <div>
                 <div class="text-xs text-base-content/60"><%= p.paid_at.strftime("%Y-%m-%d") %></div>
                 <div class="text-xs"><%= payment_product_label(p) %></div>
@@ -69,7 +95,10 @@
         </ul>
         <% if @total_payments_count > @recent_payments.size %>
           <p class="text-xs text-base-content/50 mt-2">
-            Showing <%= @recent_payments.size %> most recent of <%= @total_payments_count %>.
+            Showing
+            <%= @recent_payments.size %>
+            most recent of
+            <%= @total_payments_count %>.
             <%= link_to "All payments", admin_payments_path, class: "underline" %>.
           </p>
         <% end %>

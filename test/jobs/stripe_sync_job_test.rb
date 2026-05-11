@@ -92,7 +92,8 @@ class StripeSyncJobTest < ActiveJob::TestCase
     StripeSyncJob.perform_now
 
     assert_kind_of Time, written["stripe:last_sync_at"]
-    assert_equal({ customers: 0, subscriptions: 1, payments: 0 }, written["stripe:last_sync_summary"])
+    assert_equal({ customers: 0, subscriptions: 1, payments: 0, payments_relinked: 0 },
+                 written["stripe:last_sync_summary"])
   end
 
   private

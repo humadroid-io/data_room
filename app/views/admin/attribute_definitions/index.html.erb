@@ -23,7 +23,7 @@
         <tbody>
           <% defns.each do |d| %>
             <tr>
-              <td><code class="text-xs"><%= d.key %></code></td>
+              <td><%= link_to d.key, admin_attribute_definition_path(d), class: "underline text-xs font-mono" %></td>
               <td><%= d.label %></td>
               <td><span class="badge badge-soft badge-sm"><%= d.data_type %></span></td>
               <td><%= "Yes" if d.required %></td>

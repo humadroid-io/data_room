@@ -181,6 +181,40 @@ Sync now without restarting. The products map is **optional**; unmapped
 prices show their raw `stripe_price_id` as the product label everywhere
 they're displayed.
 
+#### Currency normalization
+
+All money is normalized to **USD** at fixed FX rates configured in
+`app/services/currency_converter.rb`:
+
+| Currency | Rate to USD |
+|---|---|
+| USD | identity |
+| EUR | 1 EUR = 1 / 0.85 USD ≈ 1.176 USD |
+| PLN | 1 PLN = 1 / 3.6 USD  ≈ 0.278 USD |
+
+`Subscription`, `Payment`, and `Snapshot` each store both the native amount
+(`mrr_cents` / `amount_cents`) and the USD-converted value (`mrr_cents_usd`
+/ `amount_cents_usd`). USD is recomputed on every save, so changing the
+FX rate + re-saving (or running a backfill) reconverts in place. All
+aggregations and charts read the USD columns; admin show pages also
+expose the native amount for traceability.
+
+To add a currency or change a rate, edit `CurrencyConverter::RATES_TO_USD`
+and re-save affected rows (the `before_save` hook does the rest).
+
+#### Auto-churn from Stripe cancellations
+
+When every subscription belonging to a customer has `status: canceled`,
+the customer's `churned_on` is set automatically to the latest
+`canceled_at` across their subs. Fires from a `Subscription#after_save`
+hook so it happens during normal Stripe sync.
+
+The auto-detection **never overwrites** a `churned_on` already set
+(whether by an earlier auto-trigger or by an admin). To re-mark a
+revived-then-re-churned customer, clear `churned_on` in admin first.
+Admin's `churn_reason_category` / `churn_reason_notes` are always
+preserved.
+
 #### Stripe API key
 
 The initializer (`config/initializers/stripe.rb`) reads the key from

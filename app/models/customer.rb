@@ -48,6 +48,21 @@ class Customer < ApplicationRecord
     churned_on.present?
   end
 
+  # Set churned_on automatically when all subscriptions are canceled.
+  # Idempotent — never overwrites an existing churned_on (admin's manual
+  # record wins), never clears one (a revived customer needs admin action).
+  def auto_detect_churn!
+    return if churned_on.present?
+    subs = subscriptions.reload
+    return if subs.empty?
+    return unless subs.all?(&:canceled?)
+
+    latest_cancel = subs.filter_map(&:canceled_at).max
+    return unless latest_cancel
+
+    update_columns(churned_on: latest_cancel.to_date)
+  end
+
   def self.sanitize_json_key(key)
     raise ArgumentError, "invalid attribute key" unless key.to_s.match?(/\A[a-z][a-z0-9_]*\z/)
     key.to_s

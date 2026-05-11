@@ -46,4 +46,62 @@ class SubscriptionTest < ActiveSupport::TestCase
     sub = build(:subscription, product_code: nil, stripe_price_id: nil)
     assert_equal "—", sub.display_product
   end
+
+  # --- USD normalization --------------------------------------------------
+
+  test "computes mrr_cents_usd from EUR on save" do
+    sub = create(:subscription, mrr_cents: 8_500, currency: "eur")
+    assert_equal 10_000, sub.mrr_cents_usd  # 8500 / 0.85 = 10000
+  end
+
+  test "computes mrr_cents_usd from PLN on save" do
+    sub = create(:subscription, mrr_cents: 36_000, currency: "pln")
+    assert_equal 10_000, sub.mrr_cents_usd  # 36000 / 3.6 = 10000
+  end
+
+  test "passes USD through unchanged" do
+    sub = create(:subscription, mrr_cents: 10_000, currency: "usd")
+    assert_equal 10_000, sub.mrr_cents_usd
+  end
+
+  test "recomputes mrr_cents_usd when currency changes" do
+    sub = create(:subscription, mrr_cents: 36_000, currency: "pln")
+    assert_equal 10_000, sub.mrr_cents_usd
+    sub.update!(currency: "usd")
+    assert_equal 36_000, sub.mrr_cents_usd
+  end
+
+  # --- effective_mrr_cents_usd --------------------------------------------
+
+  test "effective_mrr falls back to nominal when no payments exist" do
+    sub = create(:subscription, mrr_cents: 10_000, currency: "usd", interval_months: 1)
+    assert_equal 10_000, sub.effective_mrr_cents_usd
+  end
+
+  test "effective_mrr uses latest payment for monthly subs (reflects discounts)" do
+    # Nominal $100/mo but customer paid $90 (10% off coupon).
+    sub = create(:subscription, mrr_cents: 10_000, currency: "usd", interval_months: 1)
+    create(:payment, customer: sub.customer, subscription: sub,
+                     amount_cents: 9_000, currency: "usd", paid_at: 1.day.ago)
+    assert_equal 9_000, sub.effective_mrr_cents_usd
+  end
+
+  test "effective_mrr amortizes latest payment for annual subs" do
+    # List $1200/yr ($100/mo nominal). Customer paid $1080/yr → $90/mo effective.
+    sub = create(:subscription, mrr_cents: 10_000, currency: "usd", interval_months: 12)
+    create(:payment, customer: sub.customer, subscription: sub,
+                     amount_cents: 108_000, currency: "usd", paid_at: 1.month.ago)
+    assert_equal 9_000, sub.effective_mrr_cents_usd
+  end
+
+  test "effective_mrr respects as_of by only considering earlier payments" do
+    sub = create(:subscription, mrr_cents: 10_000, currency: "usd", interval_months: 1)
+    create(:payment, customer: sub.customer, subscription: sub,
+                     amount_cents: 9_000, currency: "usd", paid_at: Date.new(2026, 3, 5))
+    create(:payment, customer: sub.customer, subscription: sub,
+                     amount_cents: 8_500, currency: "usd", paid_at: Date.new(2026, 5, 5))
+
+    assert_equal 9_000, sub.effective_mrr_cents_usd(as_of: Date.new(2026, 4, 1))
+    assert_equal 8_500, sub.effective_mrr_cents_usd(as_of: Date.new(2026, 6, 1))
+  end
 end

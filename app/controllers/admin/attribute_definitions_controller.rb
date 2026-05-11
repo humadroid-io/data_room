@@ -1,9 +1,19 @@
 class Admin::AttributeDefinitionsController < Admin::BaseController
-  before_action :set_definition, only: %i[edit update destroy]
+  before_action :set_definition, only: %i[show edit update destroy]
 
   def index
     @grouped = AttributeDefinition.order(:resource_type, :sort_order, :label)
                                    .group_by(&:resource_type)
+  end
+
+  def show
+    if @definition.resource_type == "Customer"
+      @resource_count = Customer.count
+      @usage_count    = Customer
+        .where("json_extract(custom_attributes, ?) IS NOT NULL",
+               "$.#{Customer.sanitize_json_key(@definition.key)}")
+        .count
+    end
   end
 
   def new

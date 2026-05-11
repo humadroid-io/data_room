@@ -21,10 +21,26 @@ class Admin::PaymentsHelperTest < ActionView::TestCase
     assert_equal "$", currency_symbol("usd")
   end
 
-  test "payment_amount uses payment's own currency" do
+  test "usd_money formats from cents to USD dollars with $ symbol" do
+    assert_equal "$1,234", usd_money(123_400)
+    assert_equal "$0",     usd_money(0)
+    assert_equal "$0",     usd_money(nil)
+  end
+
+  test "payment_amount always returns USD regardless of native currency" do
+    customer = create(:customer)
+    # 7700 EUR cents → 7700 / 0.85 ≈ 9059 USD cents → $90
+    eur_payment = create(:payment, customer: customer, amount_cents: 7_700, currency: "eur")
+    assert_equal "$90", payment_amount(eur_payment)
+
+    usd_payment = create(:payment, customer: customer, amount_cents: 5_000, currency: "usd")
+    assert_equal "$50", payment_amount(usd_payment)
+  end
+
+  test "payment_native_amount shows the original currency" do
     customer = create(:customer)
     payment  = create(:payment, customer: customer, amount_cents: 7_700, currency: "eur")
-    assert_equal "€77", payment_amount(payment)
+    assert_equal "€77", payment_native_amount(payment)
   end
 
   test "payment_product_label returns subscription's display_product when linked" do

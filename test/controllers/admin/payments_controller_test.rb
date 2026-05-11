@@ -68,4 +68,28 @@ class Admin::PaymentsControllerTest < ActionDispatch::IntegrationTest
     get admin_payments_path
     assert_redirected_to admin_login_path
   end
+
+  test "GET show renders a single payment with its customer and subscription" do
+    customer = create(:customer, name: "Customer X")
+    sub      = create(:subscription, customer: customer, product_code: "alpha")
+    payment  = create(:payment, customer: customer, subscription: sub,
+                                 amount_cents: 9_900, currency: "usd",
+                                 stripe_invoice_id: "in_show_test")
+
+    get admin_payment_path(payment)
+    assert_response :success
+    body = response.body
+    assert_match "$99",            body
+    assert_match "Customer X",     body
+    assert_match "alpha",          body
+    assert_match "in_show_test",   body
+  end
+
+  test "GET show labels payments without a subscription as one-off" do
+    customer = create(:customer)
+    payment  = create(:payment, customer: customer, subscription: nil)
+
+    get admin_payment_path(payment)
+    assert_match "one-off", response.body
+  end
 end

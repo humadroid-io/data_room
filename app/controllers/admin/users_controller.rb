@@ -1,9 +1,11 @@
 class Admin::UsersController < Admin::BaseController
-  before_action :set_user, only: %i[edit update destroy regenerate_api_token]
+  before_action :set_user, only: %i[show edit update destroy regenerate_api_token]
 
   def index
     @users = User.order(:name)
   end
+
+  def show; end
 
   def new
     @user = User.new(role: :admin)

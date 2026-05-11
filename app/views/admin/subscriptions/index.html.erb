@@ -21,9 +21,9 @@
         <% @subscriptions.each do |s| %>
           <tr>
             <td><%= link_to s.customer.name, admin_customer_path(s.customer), class: "underline" %></td>
-            <td><code class="text-xs"><%= s.display_product %></code></td>
+            <td><%= link_to s.display_product, admin_subscription_path(s), class: "underline text-xs font-mono" %></td>
             <td><span class="badge badge-soft badge-sm"><%= s.status.titleize %></span></td>
-            <td class="text-right tabular-nums">$<%= number_with_delimiter(s.mrr_cents / 100) %></td>
+            <td class="text-right tabular-nums"><%= usd_money(s.mrr_cents_usd) %></td>
             <td><code class="text-xs text-base-content/60"><%= s.stripe_subscription_id %></code></td>
             <td class="text-right">
               <%= link_to "Edit", edit_admin_subscription_path(s), class: "btn btn-ghost btn-xs" %>

@@ -10,6 +10,23 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_match other.email, response.body
   end
 
+  test "GET show renders the user's profile and token state" do
+    other = create(:user, email: "other@example.com", name: "Other Admin")
+    other.regenerate_api_token!
+
+    get admin_user_path(other)
+    assert_response :success
+    body = response.body
+    assert_match "Other Admin",      body
+    assert_match "other@example.com", body
+    assert_match other.api_token,     body
+  end
+
+  test "GET show on the current admin omits the delete button" do
+    get admin_user_path(@me)
+    assert_select "form[action=?]", admin_user_path(@me), count: 0
+  end
+
   test "POST create persists a new admin" do
     assert_difference -> { User.count }, 1 do
       post admin_users_path, params: {

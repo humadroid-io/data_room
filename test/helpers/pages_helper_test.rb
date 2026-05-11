@@ -197,21 +197,69 @@ class PagesHelperTest < ActionView::TestCase
     assert_empty churn_reasons_breakdown
   end
 
-  test "monthly_churn_rate computes percent of active customers churned per month" do
+  test "monthly_churn_rate computes percent based on subscription dates" do
     travel_to Date.new(2026, 6, 15) do
-      # 4 customers active at start of May 2026, 1 churns in May → 25%.
-      4.times { create(:customer, created_at: Date.new(2026, 1, 1)) }
-      Customer.first.update!(churned_on: Date.new(2026, 5, 10))
+      # 4 customers each with one subscription that started 6 months ago.
+      4.times.map do
+        c = create(:customer)
+        create(:subscription, customer: c,
+                              started_at: Date.new(2026, 1, 1),
+                              canceled_at: nil)
+        c
+      end
+      # One subscription is canceled in May 2026.
+      Subscription.first.update!(status: :canceled, canceled_at: Date.new(2026, 5, 10))
 
       rate = monthly_churn_rate(months_back: 2)
-      assert_equal 25.0, rate["2026-05"]
-      assert_equal 0.0,  rate["2026-04"]
+      assert_equal 25.0, rate["2026-05"]  # 1/4 active customers gone by Jun 1
+      assert_equal 0.0,  rate["2026-04"]  # nobody churned in April
     end
   end
 
-  test "monthly_churn_rate returns 0 when no customers were active" do
+  test "monthly_churn_rate ignores customers with no subscriptions" do
+    travel_to Date.new(2026, 6, 15) do
+      create(:customer, churned_on: Date.new(2026, 5, 10))  # admin-only, no subs
+      assert_equal 0.0, monthly_churn_rate(months_back: 1)["2026-05"]
+    end
+  end
+
+  test "monthly_churn_rate uses Stripe started_at, not Customer.created_at" do
+    travel_to Date.new(2026, 6, 15) do
+      # Customer record was 'imported' today, but their Stripe sub started ages ago
+      # and was canceled in May. Should still count toward May churn.
+      c = create(:customer, created_at: Date.new(2026, 6, 14))
+      create(:subscription, customer: c,
+                            started_at: Date.new(2025, 11, 1),
+                            canceled_at: Date.new(2026, 5, 20),
+                            status: :canceled)
+      # Plus a peer that's still active so the denominator > 0.
+      peer = create(:customer, created_at: Date.new(2026, 6, 14))
+      create(:subscription, customer: peer,
+                            started_at: Date.new(2025, 11, 1),
+                            canceled_at: nil)
+
+      rate = monthly_churn_rate(months_back: 2)
+      assert_equal 50.0, rate["2026-05"]  # 1 of 2 churned
+    end
+  end
+
+  test "monthly_churn_rate returns 0 when nobody was active at month start" do
     travel_to Date.new(2026, 6, 15) do
       assert_equal 0.0, monthly_churn_rate(months_back: 1)["2026-05"]
+    end
+  end
+
+  test "monthly_churn_rate keeps customers with multiple subs active until last cancel" do
+    travel_to Date.new(2026, 6, 15) do
+      c = create(:customer)
+      # Two subs — one cancels in April, one persists.
+      create(:subscription, customer: c, started_at: Date.new(2026, 1, 1),
+                                          canceled_at: Date.new(2026, 4, 10), status: :canceled)
+      create(:subscription, customer: c, started_at: Date.new(2026, 1, 1),
+                                          canceled_at: nil)
+
+      assert_equal 0.0, monthly_churn_rate(months_back: 3)["2026-04"]  # still has the other sub
+      assert_equal 0.0, monthly_churn_rate(months_back: 3)["2026-05"]
     end
   end
 
@@ -237,10 +285,43 @@ class PagesHelperTest < ActionView::TestCase
       create(:subscription, customer: cust, mrr_cents: 10_000,
                             started_at: Date.new(2026, 1, 1), canceled_at: nil)
 
-      m = mrr_movements["2026-05"]
-      assert_equal 100, m[:start_mrr]    # was at $100 in April
+      m = mrr_movements["2026-04"]  # April 1 → May 1: changes during April
+      assert_equal 100, m[:start_mrr]
       assert_equal 0,   m[:new]
       assert_equal 0,   m[:churn]
+    end
+  end
+
+  test "mrr_movements churn reflects post-discount cash, not list price" do
+    travel_to Date.new(2026, 5, 15) do
+      churning = create(:customer)
+      retained = create(:customer)
+
+      # Both subs have a $100/mo nominal list price.
+      sub_churn = create(:subscription, customer: churning, mrr_cents: 10_000,
+                                         currency: "usd", interval_months: 1,
+                                         started_at: Date.new(2026, 1, 1),
+                                         canceled_at: nil)
+      sub_keep  = create(:subscription, customer: retained, mrr_cents: 10_000,
+                                         currency: "usd", interval_months: 1,
+                                         started_at: Date.new(2026, 1, 1),
+                                         canceled_at: nil)
+      # Churning customer was actually paying $40/mo (60% off coupon).
+      create(:payment, customer: churning, subscription: sub_churn,
+                       amount_cents: 4_000, currency: "usd",
+                       paid_at: Date.new(2026, 3, 15))
+      create(:payment, customer: retained, subscription: sub_keep,
+                       amount_cents: 10_000, currency: "usd",
+                       paid_at: Date.new(2026, 3, 15))
+
+      # Cancel on the LAST day of May. Should appear as churn in May's bucket
+      # (May 1 boundary → June 1 boundary), not bleed into June.
+      sub_churn.update!(canceled_at: Date.new(2026, 5, 31))
+
+      m = mrr_movements["2026-05"]
+      # Churn should be $40 (what they were actually paying), not $100 nominal.
+      assert_equal 40, m[:churn]
+      assert_nil mrr_movements["2026-06"]  # no bucket past the current month
     end
   end
 
@@ -287,8 +368,9 @@ class PagesHelperTest < ActionView::TestCase
     create(:snapshot, subscription: sub_grow,   snapshot_date: may, mrr_cents: 20_000, status: :active)
     create(:snapshot, subscription: sub_shrink, snapshot_date: may, mrr_cents:  5_000, status: :active)
 
-    m = mrr_movements["2026-05"]
-    assert_equal 400, m[:start_mrr]    # 4 × $100 in April
+    # The April bucket compares April 1 → May 1 (changes during April).
+    m = mrr_movements["2026-04"]
+    assert_equal 400, m[:start_mrr]    # 4 × $100 at start of April
     assert_equal 50,  m[:new]          # New @ $50
     assert_equal 100, m[:expansion]    # Grow +$100
     assert_equal 50,  m[:contraction]  # Shrink −$50
@@ -307,7 +389,7 @@ class PagesHelperTest < ActionView::TestCase
 
     w = mrr_walk_widget
     assert_equal %w[New Expansion Contraction Churn], w[:data].map { |s| s[:name] }
-    assert_equal(-50, w[:data][2][:data]["2026-05"])  # contraction surfaced negative
+    assert_equal(-50, w[:data][2][:data]["2026-04"])  # April → May: contraction surfaced negative
   end
 
   # --- nrr_grr_widget -----------------------------------------------------
@@ -325,9 +407,9 @@ class PagesHelperTest < ActionView::TestCase
     # cust_lost gone in May → churn
 
     w = nrr_grr_widget
-    nrr = w[:data].find { |s| s[:name] == "NRR" }[:data]["2026-05"]
-    grr = w[:data].find { |s| s[:name] == "GRR" }[:data]["2026-05"]
-    # start = $200, expansion = $20, churn = $100
+    nrr = w[:data].find { |s| s[:name] == "NRR" }[:data]["2026-04"]
+    grr = w[:data].find { |s| s[:name] == "GRR" }[:data]["2026-04"]
+    # April→May: start = $200, expansion = $20, churn = $100
     # NRR = (200 + 20 - 0 - 100) / 200 = 60%
     # GRR = (200 - 0 - 100) / 200 = 50%
     assert_equal 60.0, nrr
@@ -337,30 +419,44 @@ class PagesHelperTest < ActionView::TestCase
   # --- quick_ratio_widget -------------------------------------------------
 
   test "quick_ratio_widget skips months with no losses" do
-    customer = create(:customer)
-    sub = create(:subscription, customer: customer)
-    apr = Date.new(2026, 4, 1)
-    may = Date.new(2026, 5, 1)
-    create(:snapshot, subscription: sub, snapshot_date: apr, mrr_cents: 10_000, status: :active)
-    create(:snapshot, subscription: sub, snapshot_date: may, mrr_cents: 12_000, status: :active)
-    # only expansion, no losses → quick ratio undefined → omitted
+    travel_to Date.new(2026, 5, 15) do
+      customer = create(:customer)
+      # Sub starts April 1 so older buckets are empty (no sub → no movement).
+      # mrr_cents = 12_000 matches the May/June snapshots so any fallback is flat.
+      sub = create(:subscription, customer: customer, mrr_cents: 12_000,
+                                   started_at: Date.new(2026, 4, 1), canceled_at: nil)
+      create(:snapshot, subscription: sub, snapshot_date: Date.new(2026, 4, 1),
+                        mrr_cents: 10_000, status: :active)
+      create(:snapshot, subscription: sub, snapshot_date: Date.new(2026, 5, 1),
+                        mrr_cents: 12_000, status: :active)
+      create(:snapshot, subscription: sub, snapshot_date: Date.new(2026, 6, 1),
+                        mrr_cents: 12_000, status: :active)
 
-    assert_empty quick_ratio_widget[:data]
+      # Only "new" (March→April) and "expansion" (April→May) movements,
+      # no losses anywhere → ratio undefined → omitted from data.
+      assert_empty quick_ratio_widget[:data]
+    end
   end
 
   test "quick_ratio_widget computes (gain / loss)" do
-    cust_grow = create(:customer)
-    cust_lost = create(:customer)
-    sub_grow  = create(:subscription, customer: cust_grow)
-    sub_lost  = create(:subscription, customer: cust_lost)
-    apr = Date.new(2026, 4, 1)
-    may = Date.new(2026, 5, 1)
-    create(:snapshot, subscription: sub_grow, snapshot_date: apr, mrr_cents: 10_000, status: :active)
-    create(:snapshot, subscription: sub_lost, snapshot_date: apr, mrr_cents:  5_000, status: :active)
-    create(:snapshot, subscription: sub_grow, snapshot_date: may, mrr_cents: 14_000, status: :active)
-    # gain = $40 expansion, loss = $50 churn → 0.8
+    travel_to Date.new(2026, 5, 15) do
+      cust_grow = create(:customer)
+      cust_lost = create(:customer)
+      # Cancel the 'lost' sub in April so it's gone at May 1 boundary.
+      sub_grow  = create(:subscription, customer: cust_grow, mrr_cents: 14_000,
+                                         started_at: Date.new(2026, 1, 1), canceled_at: nil)
+      sub_lost  = create(:subscription, customer: cust_lost, mrr_cents:  5_000,
+                                         started_at: Date.new(2026, 1, 1),
+                                         canceled_at: Date.new(2026, 4, 20), status: :canceled)
+      apr = Date.new(2026, 4, 1)
+      may = Date.new(2026, 5, 1)
+      create(:snapshot, subscription: sub_grow, snapshot_date: apr, mrr_cents: 10_000, status: :active)
+      create(:snapshot, subscription: sub_lost, snapshot_date: apr, mrr_cents:  5_000, status: :active)
+      create(:snapshot, subscription: sub_grow, snapshot_date: may, mrr_cents: 14_000, status: :active)
+      # April→May: gain $40 expansion, loss $50 churn → 0.8
 
-    assert_equal 0.8, quick_ratio_widget[:data]["2026-05"]
+      assert_equal 0.8, quick_ratio_widget[:data]["2026-04"]
+    end
   end
 
   # --- customer_concentration_widget --------------------------------------

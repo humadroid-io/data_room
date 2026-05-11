@@ -41,13 +41,13 @@ module PagesHelper
 
   # Returns chartkick-ready data for a stacked-area "revenue per month per
   # product" chart. Reads from the Payment table (actual cash collected,
-  # post-discount). Joins subscriptions for product attribution; falls back to
-  # the raw stripe_price_id, and "Other" for one-off payments without a sub.
+  # post-discount) in **USD** — non-USD amounts are converted via the fixed
+  # rates in CurrencyConverter at write time.
   def monthly_revenue_chart_data
     raw = Payment
       .left_outer_joins(:subscription)
       .group(month_bucket_sql, "subscriptions.product_code", "subscriptions.stripe_price_id")
-      .sum(:amount_cents)
+      .sum(:amount_cents_usd)
 
     by_label = Hash.new { |h, k| h[k] = {} }
     raw.each do |(month, product_code, price_id), cents|
@@ -112,10 +112,12 @@ module PagesHelper
 
     by_month = customer_mrr_by_month(months)
 
-    months.each_with_index.with_object({}) do |(month, i), acc|
-      next if i.zero?
-      prev = months[i - 1]
-      acc[month.strftime("%Y-%m")] = movements_between(by_month[prev] || {}, by_month[month] || {})
+    # Pair each month with its successor; label by the EARLIER one. So the
+    # "2026-05" bucket = May 1 → June 1 = changes that happened during May.
+    # The latest bucket (current month) compares to "next month start" which
+    # uses live subscription state since no snapshot exists for it yet.
+    months.each_cons(2).each_with_object({}) do |(month, next_month), acc|
+      acc[month.strftime("%Y-%m")] = movements_between(by_month[month] || {}, by_month[next_month] || {})
     end
   end
 
@@ -220,31 +222,47 @@ module PagesHelper
   end
 
   # [CHURN_RATE] — for each month, the % of customers active at the start of
-  # the month who churned during it. Builds a hash of "YYYY-MM" => percent.
+  # the month who churned during it. Returns "YYYY-MM" => percent.
+  #
+  # Derived from Subscription.started_at / canceled_at (Stripe's authoritative
+  # dates), not Customer.created_at — so customers imported recently still
+  # contribute correctly to historical months. A customer is "active at
+  # boundary B" iff they have any subscription with started_at ≤ B AND
+  # (canceled_at IS NULL OR > B). "Churned in month M" means active at the
+  # start of M but not at the start of M+1.
   def monthly_churn_rate(months_back: 12)
     end_month   = Date.current.beginning_of_month
-    start_month = (end_month - months_back.months)
+    start_month = end_month - months_back.months
+    boundaries  = (0..(months_back + 1)).map { |i| start_month + i.months }
 
-    months = (0..months_back).map { |i| start_month + i.months }
-
-    months.each_with_object({}) do |month, acc|
-      next_month = month.next_month
-      bucket = month.strftime("%Y-%m")
-
-      # Active at the start = created before this month AND not yet churned
-      # (or churned later than this month's start).
-      active_at_start = Customer
-        .where("created_at < ?", month)
-        .where("churned_on IS NULL OR churned_on >= ?", month)
-        .count
-      next acc[bucket] = 0.0 if active_at_start.zero?
-
-      churned_this_month = Customer
-        .where(churned_on: month...next_month)
-        .count
-
-      acc[bucket] = ((churned_this_month.to_f / active_at_start) * 100).round(2)
+    subs = Subscription.pluck(:customer_id, :started_at, :canceled_at)
+    active_sets = boundaries.each_with_object({}) do |b, h|
+      h[b] = active_customer_ids_at(subs, b)
     end
+
+    boundaries.each_cons(2).each_with_object({}) do |(month_start, next_start), acc|
+      bucket = month_start.strftime("%Y-%m")
+      start_set = active_sets[month_start]
+
+      next acc[bucket] = 0.0 if start_set.empty?
+
+      end_set = active_sets[next_start]
+      churned = start_set - end_set
+      acc[bucket] = (churned.size.to_f / start_set.size * 100).round(2)
+    end
+  end
+
+  # Returns a Set of customer_ids that had at least one active subscription
+  # at the given boundary timestamp. `subs` is a pre-fetched array of
+  # [customer_id, started_at, canceled_at] tuples.
+  def active_customer_ids_at(subs, boundary)
+    ids = Set.new
+    subs.each do |customer_id, started_at, canceled_at|
+      next unless started_at && started_at <= boundary
+      next if canceled_at && canceled_at <= boundary
+      ids << customer_id
+    end
+    ids
   end
 
   def churn_rate_chart_id
@@ -340,12 +358,14 @@ module PagesHelper
 
   # ----- Support: snapshot-based MRR aggregation ---------------------------
 
-  # Months in a trailing window — Date objects (first-of-month).
-  # Generates the full window so charts have a complete x-axis even when
-  # snapshot data is sparse. Empty months become zeros downstream.
+  # Monthly first-of-month boundaries spanning the trailing window plus
+  # one boundary into the future (so the current month gets a forward
+  # comparison). For today=May 15, months_back=12 returns 14 boundaries
+  # from May 2025 through June 2026. Pairs of consecutive boundaries form
+  # the labeled buckets — see mrr_movements.
   def monthly_buckets(months_back)
     end_month = Date.current.beginning_of_month
-    (0..months_back).map { |i| end_month - i.months }.reverse
+    (-(months_back)..1).map { |i| end_month + i.months }
   end
 
   # { Date => { customer_id => total_mrr_cents } } for the given months.
@@ -364,26 +384,31 @@ module PagesHelper
     end
   end
 
-  # Snapshot-based: precise. Only counts active/trialing rows.
+  # Snapshot-based: precise. Only counts active/trialing rows. USD.
   def mrr_from_snapshots(month)
     Snapshot
       .joins(:subscription)
       .where(snapshot_date: month,
              status: [ Snapshot.statuses[:active], Snapshot.statuses[:trialing] ])
       .group("subscriptions.customer_id")
-      .sum(:mrr_cents)
+      .sum(:mrr_cents_usd)
   end
 
-  # Subscription-based: approximation. A subscription counts toward the
-  # month if it had started by the end of the month and hadn't been
-  # canceled before the start of the month. Uses the *current* mrr_cents
-  # (we don't track historical price changes).
-  def mrr_from_subscriptions(month)
+  # Subscription-based effective MRR per customer AT the given boundary
+  # (first-of-month timestamp). A sub counts toward MRR at that moment iff
+  # started_at <= boundary AND (canceled_at IS NULL OR canceled_at > boundary).
+  # The strict `> boundary` matters: a sub canceled May 31 is active at the
+  # May 1 boundary but NOT at the June 1 boundary, so the difference between
+  # the two boundaries surfaces as churn in the May bucket. USD.
+  def mrr_from_subscriptions(boundary)
+    result = Hash.new(0)
     Subscription
-      .where("started_at <= ?", month.end_of_month)
-      .where("canceled_at IS NULL OR canceled_at >= ?", month.beginning_of_month)
-      .group(:customer_id)
-      .sum(:mrr_cents)
+      .where("started_at <= ?", boundary)
+      .where("canceled_at IS NULL OR canceled_at > ?", boundary)
+      .find_each do |sub|
+      result[sub.customer_id] += sub.effective_mrr_cents_usd(as_of: boundary)
+    end
+    result
   end
 
   # Compares two { customer_id => cents } maps and returns the dollar
@@ -425,7 +450,7 @@ module PagesHelper
       .joins(:subscriptions)
       .where(subscriptions: { status: [ Subscription.statuses[:active], Subscription.statuses[:trialing] ] })
       .group("customers.id", "customers.name", "customers.anonymized_label")
-      .sum("subscriptions.mrr_cents")
+      .sum("subscriptions.mrr_cents_usd")
 
     rows.map do |(id, name, anon), cents|
       { id: id, label: anon.presence || name, mrr_cents: cents }

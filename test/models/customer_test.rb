@@ -133,4 +133,51 @@ class CustomerTest < ActiveSupport::TestCase
     assert_equal "price", customer.churn_reason_category
     assert customer.churn_reason_category_price?
   end
+
+  # --- auto_detect_churn! -------------------------------------------------
+
+  test "auto-marks churn when all subscriptions become canceled" do
+    customer = create(:customer)
+    sub_a = create(:subscription, customer: customer, status: :active)
+    sub_b = create(:subscription, customer: customer, status: :active)
+
+    sub_a.update!(status: :canceled, canceled_at: 5.days.ago)
+    assert_nil customer.reload.churned_on  # still has an active sub
+
+    sub_b.update!(status: :canceled, canceled_at: 1.day.ago)
+    assert_equal 1.day.ago.to_date, customer.reload.churned_on
+  end
+
+  test "auto-churn picks the latest cancel date when triggered with multiple canceled subs" do
+    customer = create(:customer)
+    create(:subscription, customer: customer, status: :canceled, canceled_at: Date.new(2026, 1, 1))
+    create(:subscription, customer: customer, status: :canceled, canceled_at: Date.new(2026, 5, 10))
+
+    # The first save already auto-set churned_on; clear it so we can prove
+    # the helper picks max across both subs in one call.
+    customer.update_columns(churned_on: nil)
+    customer.auto_detect_churn!
+
+    assert_equal Date.new(2026, 5, 10), customer.reload.churned_on
+  end
+
+  test "auto-churn does not overwrite an existing manual churned_on" do
+    customer = create(:customer, churned_on: Date.new(2026, 3, 1),
+                                  churn_reason_category: :price)
+    create(:subscription, customer: customer, status: :canceled, canceled_at: 1.day.ago)
+    assert_equal Date.new(2026, 3, 1), customer.reload.churned_on
+  end
+
+  test "auto-churn does not fire when at least one sub is still active" do
+    customer = create(:customer)
+    create(:subscription, customer: customer, status: :active)
+    create(:subscription, customer: customer, status: :canceled, canceled_at: 1.day.ago)
+    assert_nil customer.reload.churned_on
+  end
+
+  test "auto-churn does not fire for customers with no subscriptions" do
+    customer = create(:customer)
+    customer.auto_detect_churn!
+    assert_nil customer.churned_on
+  end
 end

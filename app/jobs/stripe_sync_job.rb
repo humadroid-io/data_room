@@ -16,9 +16,15 @@ class StripeSyncJob < ApplicationJob
       subs_synced += 1 if sync_subscription(stripe_sub)
     end
 
-    payments_imported = StripePaymentImporter.run
+    payments_imported  = StripePaymentImporter.run
+    payments_relinked  = Payment.backfill_subscriptions!
 
-    summary = { customers: customers_imported, subscriptions: subs_synced, payments: payments_imported }
+    summary = {
+      customers:        customers_imported,
+      subscriptions:    subs_synced,
+      payments:         payments_imported,
+      payments_relinked: payments_relinked
+    }
     Rails.cache.write("stripe:last_sync_at", Time.current, expires_in: 1.year)
     Rails.cache.write("stripe:last_sync_summary", summary, expires_in: 1.year)
 
@@ -44,6 +50,7 @@ class StripeSyncJob < ApplicationJob
       customer:           customer,
       stripe_customer_id: s.customer,
       mrr_cents:          extract_mrr_cents(s),
+      interval_months:    extract_interval_months(s),
       currency:           s.currency,
       status:             map_status(s.status),
       stripe_price_id:    price_id,
@@ -55,6 +62,20 @@ class StripeSyncJob < ApplicationJob
     )
     sub.save!
     true
+  end
+
+  # Stripe price.recurring → number of months per billing cycle.
+  # Defaults to 1 (monthly) when absent so the NOT NULL column stays happy.
+  def extract_interval_months(s)
+    recurring = s.items.data.first&.price&.recurring
+    return 1 unless recurring
+    count = (recurring.interval_count || 1).to_i
+    case recurring.interval
+    when "month" then count
+    when "year"  then count * 12
+    when "week"  then [ (count / 4.0).round, 1 ].max
+    else 1
+    end
   end
 
   def extract_mrr_cents(s)

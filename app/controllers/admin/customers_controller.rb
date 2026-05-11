@@ -7,7 +7,7 @@ class Admin::CustomersController < Admin::BaseController
 
   def show
     @recent_payments      = @customer.payments.order(paid_at: :desc).limit(20)
-    @total_paid_cents     = @customer.payments.sum(:amount_cents)
+    @total_paid_cents     = @customer.payments.sum(:amount_cents_usd)
     @total_payments_count = @customer.payments.count
   end
 

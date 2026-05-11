@@ -28,6 +28,7 @@ module Admin::DashboardsHelper
     parts << "#{summary[:customers]} customers"          if summary.key?(:customers)
     parts << "#{summary[:subscriptions]} subscriptions"  if summary.key?(:subscriptions)
     parts << "#{summary[:payments]} payments"            if summary.key?(:payments)
+    parts << "#{summary[:payments_relinked]} re-linked"  if summary[:payments_relinked].to_i > 0
     parts.join(" · ").presence
   end
 

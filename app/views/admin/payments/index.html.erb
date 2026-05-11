@@ -9,8 +9,8 @@
   </div>
   <div class="card bg-base-100 border border-base-300 p-4">
     <div class="text-xs uppercase tracking-wide text-base-content/60">Total received</div>
-    <div class="text-2xl font-semibold tabular-nums"><%= format_money(@total_amount, "usd") %></div>
-    <div class="text-xs text-base-content/50 mt-1">All currencies normalized to USD display only</div>
+    <div class="text-2xl font-semibold tabular-nums"><%= usd_money(@total_amount) %></div>
+    <div class="text-xs text-base-content/50 mt-1">All currencies normalized to USD at fixed FX rates</div>
   </div>
   <div class="card bg-base-100 border border-base-300 p-4">
     <div class="text-xs uppercase tracking-wide text-base-content/60">Most recent</div>
@@ -39,7 +39,7 @@
             <td><%= link_to p.customer.name, admin_customer_path(p.customer), class: "underline" %></td>
             <td class="text-sm"><%= payment_product_label(p) %></td>
             <td class="text-right tabular-nums font-medium"><%= payment_amount(p) %></td>
-            <td><code class="text-xs text-base-content/60"><%= p.stripe_invoice_id %></code></td>
+            <td><%= link_to p.stripe_invoice_id, admin_payment_path(p), class: "underline text-xs font-mono text-base-content/60" %></td>
           </tr>
         <% end %>
       </tbody>

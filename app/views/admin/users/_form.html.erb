@@ -20,10 +20,10 @@
     <div>
       <label class="label label-text text-xs uppercase tracking-wide">Role</label>
       <%= f.select :role,
-            User.roles.keys.map { |r| [ r.titleize, r ] },
-            {},
-            class: "select select-bordered w-full",
-            disabled: user == current_admin %>
+               User.roles.keys.map { |r| [r.titleize, r] },
+               {},
+               class: "select select-bordered w-full",
+               disabled: user == current_admin %>
       <% if user == current_admin %>
         <p class="text-xs text-base-content/50 mt-1">You can't change your own role.</p>
       <% end %>
@@ -34,41 +34,20 @@
       <label class="label label-text text-xs uppercase tracking-wide">
         Password<%= " (leave blank to keep)" if user.persisted? %>
       </label>
-      <%= f.password_field :password, class: "input input-bordered w-full",
-            autocomplete: "new-password" %>
+      <%= f.password_field :password,
+                       class: "input input-bordered w-full",
+                       autocomplete: "new-password" %>
     </div>
     <div>
       <label class="label label-text text-xs uppercase tracking-wide">Confirm password</label>
-      <%= f.password_field :password_confirmation, class: "input input-bordered w-full",
-            autocomplete: "new-password" %>
+      <%= f.password_field :password_confirmation,
+                       class: "input input-bordered w-full",
+                       autocomplete: "new-password" %>
     </div>
   </div>
 
   <div class="flex items-center gap-2">
     <%= f.submit (user.persisted? ? "Save" : "Create"), class: "btn btn-primary" %>
     <%= link_to "Cancel", admin_users_path, class: "btn btn-ghost" %>
-  </div>
-<% end %>
-
-<% if user.persisted? %>
-  <div class="card bg-base-100 border border-base-300 p-6 mt-6 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/60">MCP token</h2>
-      <%= button_to (user.api_token.present? ? "Regenerate" : "Generate"),
-            regenerate_api_token_admin_user_path(user),
-            method: :post,
-            form: { class: "inline", data: { turbo_confirm: user.api_token.present? ? "Regenerate? The old token stops working immediately." : nil } },
-            class: "btn btn-ghost btn-xs" %>
-    </div>
-
-    <% if user.api_token.present? %>
-      <div class="font-mono text-xs bg-base-200 p-2 rounded select-all break-all"><%= user.api_token %></div>
-      <p class="text-xs text-base-content/50">
-        This is the bearer token <%= user.email %> uses to authenticate against
-        the MCP server at <code><%= request.base_url %>/mcp</code>.
-      </p>
-    <% else %>
-      <p class="text-xs text-base-content/50">No token issued. Generate one to let this user manage content via MCP.</p>
-    <% end %>
   </div>
 <% end %>
